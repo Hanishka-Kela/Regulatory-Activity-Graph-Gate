@@ -3,31 +3,30 @@
 # Policy ID: DL-02
 # Severity:  BLOCK
 #
-# Source: RBI Digital Lending Directions (2022), Para 8 — Lending Service
-#         Provider (LSP) arrangements. An RE (Regulated Entity) engaging an
-#         LSP must maintain a board-approved list of LSP partners.
-# Document: "Guidelines on Digital Lending" dated September 2, 2022
-# URL: https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12382
-# Clause: Para 8 — "The RE shall ensure that the Digital Lending App or
-#   platform used by it or its LSPs does not store any customer data on
-#   servers located outside India, and the RE shall not use the services
-#   of LSPs whose names are not contained in the board-approved list
-#   maintained by the RE."
-# Effective: 2022-09-02
+# Source: Reserve Bank of India — Reserve Bank of India (Digital Lending) Directions, 2025
+# Reference Number: RBI/2025-26/36, DOR.STR.REC.19/21.07.001/2025-26
+# Dated: May 8, 2025 (effective May 8, 2025; supersedes the Guidelines on Digital Lending
+#        dated September 2, 2022 and related circulars)
+# Primary URL: https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12848
 #
-# What this rule detects:
-#   A lending-related actor (FINANCING_PROVIDER) appearing in the proposed
-#   graph whose actorId is NOT present in the approved-partners registry.
+# Regulatory context (confirmed against the primary Directions):
 #
-#   This is NOT a legal RE-LSP contract verification. It is a structural
-#   internal-approval gate: if the graph shows a new FINANCING_PROVIDER actor
-#   and that actor's actorId is not in the internal approved-partners list,
-#   the change is blocked.
+#   Clauses 5(i)-(vii), 8(iv)(b), and 17(i)-(vii) require RE-LSP due diligence and
+#   accountability, public disclosure of LSPs/DLAs, and DLA reporting to RBI's CIMS portal.
+#   The "board-approved list" language from Para 8 of the superseded 2022 Guidelines is
+#   not the formulation used in the 2025 Directions. The system operationalises the
+#   current obligations as an internal gate:
+#   any FINANCING_PROVIDER actor not present in the approved-partners registry constitutes
+#   an undisclosed/unvouched LSP engagement and must be reviewed before release.
 #
-#   Note: checks ALL FINANCING_PROVIDER actors in the full proposedGraph,
-#   not just those in the delta. This catches actors that were silently
-#   added in an earlier un-reviewed change and only gain new activity in
-#   this PR (per section 20 design rationale).
+# Design note: this gate is internal-structural, not a legal RE-LSP contract verification.
+# The regulatory substance (RE must maintain LSP accountability and disclose all engaged
+# partners) is current as of 2025. The specific gate mechanism (internal approved-partners
+# registry) is an implementation choice of this system.
+#
+# Observable graph condition: any Actor with type = FINANCING_PROVIDER in the full
+# proposed graph whose actorId is not present in .regulatory/approved-partners.json.
+
 
 package regulatory.dl02
 
@@ -51,7 +50,7 @@ violations contains v if {
         "policyId": "DL-02",
         "severity": "BLOCK",
         "message": sprintf(
-            "Financing provider actor '%v' (%v) is not present in the approved-partners registry. RBI Digital Lending Directions Para 8 requires board-approved LSP list. Add this partner to .regulatory/approved-partners.json before merging.",
+            "Financing provider actor '%v' (%v) is not present in the approved-partners registry. RBI Digital Lending Directions clauses 5, 8(iv)(b), and 17 require LSP accountability and disclosure. Add this partner to .regulatory/approved-partners.json before merging.",
             [actor.id, actor.label]
         ),
         "graphObjects": [{"id": actor.id, "label": actor.label}],

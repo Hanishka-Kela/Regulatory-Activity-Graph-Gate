@@ -10,9 +10,10 @@
  * If identity changes: removed + added.
  * If identity remains but financial-semantic fields change: changedMoneyEdges / changedObligations.
  *
- * Known limitation: changedAccounts is not tracked. If an account keeps the
- * same identity (id + ownerActorId + custody) but those values change, it will
- * appear as remove + add. There is currently no changedAccounts collection.
+ * Account identity includes id, ownerActorId, and custody, so changes to any of
+ * those fields are represented as a removed account plus an added account.
+ * There is no separate changedAccounts collection because no account change is
+ * invisible to this identity model.
  */
 
 import type {

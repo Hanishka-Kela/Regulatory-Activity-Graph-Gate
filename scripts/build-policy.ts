@@ -54,7 +54,7 @@ console.log("WASM output:", wasmOut);
 // OPA build command:
 //   -t wasm          — target WebAssembly
 //   -e regulatory/main — entrypoint package
-//   The main.rego imports dl-01, pa-01, dl-02
+//   The main.rego imports dl-01, pa-01, dl-02, dl-03
 execSync(
   `opa build -t wasm -e regulatory/main/decision -e regulatory/main/all_violations "${regoDir}"`,
   {

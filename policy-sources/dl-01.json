@@ -2,17 +2,28 @@
   "policyId": "DL-01",
   "name": "Digital Lending — Prohibited Pool/Pass-Through Account Pattern",
   "severity": "BLOCK",
-  "sourceDocument": "Guidelines on Digital Lending",
-  "sourceUrl": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12382",
-  "issuer": "Reserve Bank of India",
-  "referenceNumber": "RBI/2022-23/098 DOR.CRE.REC.66/03.10.001/2022-23",
-  "effectiveDate": "2022-09-02",
-  "section": "Para 10",
-  "clauseText": "Loan servicing and repayment shall only be executed between the borrower's bank account and the RE's bank account directly. Disbursals and repayments must not be routed through a pass-through / pool account of any LSP.",
+  "sourceDocument": "Reserve Bank of India (Digital Lending) Directions, 2025",
+  "supersedes": "Guidelines on Digital Lending (September 2, 2022, RBI/2022-23/098 DOR.CRE.REC.66/03.10.001/2022-23)",
+  "primaryUrl": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12848",
+  "issuer": "Reserve Bank of India, Department of Regulation",
+  "referenceNumber": "RBI/2025-26/36, DOR.STR.REC.19/21.07.001/2025-26",
+  "dated": "2025-05-08",
+  "effectiveDate": "2025-05-08",
+  "clause": "9(i)-(iii), Loan disbursal, servicing and repayment",
+  "clauseStatus": "PRIMARY SOURCE CONFIRMED",
+  "clauseStatusDetail": "The official RBI notification identifies clause 9(i)-(iii) as the loan disbursal, servicing and repayment requirements.",
+  "substanceConfirmed": true,
+  "substanceCorroboration": [
+    "nishithdesai.com analysis of RBI Digital Lending Directions 2025",
+    "lawrbit.com summary of Digital Lending Directions 2025",
+    "legal500.com analysis: RBI Digital Lending Directions 2025",
+    "synergialegal.com: Digital Lending Directions 2025 analysis"
+  ],
+  "ruleSubstance": "Loan disbursements must be made directly into the bank account of the borrower. The RE must ensure that in no case shall the disbursal be made to a third-party account, including the accounts of any LSP or DLA. All loan servicing and repayment shall be executed by the borrower directly in the RE's bank account without the use of any pass-through or pool account of any third party, including LSPs.",
   "observableGraphCondition": "Any MoneyEdge with mechanism=POOL_PASS_THROUGH in the proposed graph.",
   "implementationNotes": [
     "POOL_PASS_THROUGH mechanism value is set by the deterministic extractor only when evidence clearly indicates funds flowing through a third-party pool/treasury account before reaching the final destination.",
-    "This rule does NOT attempt to determine whether the overall product is a lending product — that is established by graph context (presence of FINANCING_PROVIDER actors and Obligation objects).",
-    "Exceptions defined in Para 10 (e.g., payment gateway as collection agent with T+0 settlement) are not handled by this rule and would require manual review if applicable."
+    "The 2025 Directions supersede the 2022 Guidelines. The old citation (Para 10 of the 2022 Guidelines) was incorrect."
+    "Note on 2022 old citation error: the previous implementation incorrectly cited Para 10 of the 2022 Guidelines. Even in the 2022 document, Para 10 covered data localisation / CERSAI requirements, not the disbursal flow rule."
   ]
 }

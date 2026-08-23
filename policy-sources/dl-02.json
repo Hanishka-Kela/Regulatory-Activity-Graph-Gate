@@ -2,18 +2,29 @@
   "policyId": "DL-02",
   "name": "Digital Lending — Approved Partner Structural Check",
   "severity": "BLOCK",
-  "sourceDocument": "Guidelines on Digital Lending",
-  "sourceUrl": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12382",
-  "issuer": "Reserve Bank of India",
-  "referenceNumber": "RBI/2022-23/098 DOR.CRE.REC.66/03.10.001/2022-23",
-  "effectiveDate": "2022-09-02",
-  "section": "Para 8",
-  "clauseText": "The RE shall ensure that the Digital Lending App or platform used by it or its LSPs does not store any customer data on servers located outside India, and the RE shall not use the services of LSPs whose names are not contained in the board-approved list maintained by the RE.",
+  "sourceDocument": "Reserve Bank of India (Digital Lending) Directions, 2025",
+  "supersedes": "Guidelines on Digital Lending (September 2, 2022, RBI/2022-23/098 DOR.CRE.REC.66/03.10.001/2022-23)",
+  "primaryUrl": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12848",
+  "issuer": "Reserve Bank of India, Department of Regulation",
+  "referenceNumber": "RBI/2025-26/36, DOR.STR.REC.19/21.07.001/2025-26",
+  "dated": "2025-05-08",
+  "effectiveDate": "2025-05-08",
+  "clause": "5(i)-(vii), 8(iv)(b), and 17(i)-(vii)",
+  "clauseStatus": "PRIMARY SOURCE CONFIRMED; NO BOARD-APPROVED-LSP-LIST REQUIREMENT",
+  "clauseStatusDetail": "The official RBI notification confirms current RE-LSP accountability and due diligence in clause 5, public LSP/DLA disclosure in clause 8(iv)(b), and DLA reporting to RBI in clause 17. It does not use the superseded 2022 board-approved LSP list formulation.",
+  "substanceConfirmed": true,
+  "substanceCorroboration": [
+    "nishithdesai.com analysis of RBI Digital Lending Directions 2025",
+    "lawrbit.com summary of Digital Lending Directions 2025",
+    "synergialegal.com: Digital Lending Directions 2025 — LSP website disclosure and CIMS reporting requirements"
+  ],
+  "ruleSubstance": "The 2025 Directions require REs to: (a) maintain an updated public website listing all engaged LSPs and DLAs; (b) report all DLAs to RBI's CIMS (Centralised Information Management System) portal; (c) take full responsibility for all actions of their engaged LSPs. The RE must ensure all LSPs comply with applicable RBI directions. The 'board-approved list' language from Para 8 of the superseded 2022 Guidelines has evolved — the 2025 Directions focus on disclosure and CIMS reporting rather than a private board-approved list.",
+  "implementationDesignNote": "This gate is internal-structural, not a legal RE-LSP contract verification. The regulatory substance (RE must maintain LSP accountability and disclose all engaged partners) is current under the 2025 Directions. The specific gate mechanism (internal approved-partners registry keyed on actorId) is an implementation choice of this system, operationalising the RE's accountability obligation as a pre-release check. Any FINANCING_PROVIDER actor not in the registry is treated as an undisclosed/unvouched LSP engagement.",
   "observableGraphCondition": "Any Actor with type=FINANCING_PROVIDER in the full proposedGraph whose actorId is not present in .regulatory/approved-partners.json.",
   "implementationNotes": [
-    "This is NOT a legal RE-LSP contract verification. It is a structural internal-approval gate.",
-    "The check is performed against the FULL proposedGraph (not just the delta) to catch actors that were silently added in a prior un-reviewed change and only gain new activity in the current PR.",
-    "Adding a partner to approved-partners.json is an explicit compliance team action — it should not be automated or auto-approved.",
-    "The approved-partners.json file must be version-controlled and require separate approval to modify."
+    "Check is performed against the FULL proposedGraph (not just delta) to catch actors silently added in a prior un-reviewed change.",
+    "Adding a partner to approved-partners.json is an explicit compliance team action — it must not be automated.",
+    "The 2025 Directions have restructured the old 2022 board-approved-list concept into current due-diligence, accountability, disclosure, and reporting obligations.",
+    "Note on old citation error: previous implementation incorrectly cited the clause text of 2022 Para 8 — the quote about data localisation was used as the source for the board-approved list requirement. These are distinct sub-clauses even in the 2022 document."
   ]
 }

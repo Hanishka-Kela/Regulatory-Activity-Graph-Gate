@@ -242,9 +242,10 @@ export interface ActivityGraph {
 /**
  * ΔG = G_proposed − G_baseline
  *
- * Known limitation: changedAccounts is not tracked. If an account keeps
- * the same identity but its custody changes, this is currently invisible
- * to the delta. Document and do not silently extend scope.
+ * Account identity includes id, ownerActorId, and custody, so changes to any of
+ * those fields appear as a removed account plus an added account. There is no
+ * separate changedAccounts collection because no account change is invisible
+ * to this identity model.
  */
 export interface GraphDelta {
   addedActors: Actor[];

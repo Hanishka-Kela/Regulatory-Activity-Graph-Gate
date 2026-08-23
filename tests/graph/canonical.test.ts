@@ -157,7 +157,7 @@ describe("canonical schema validation", () => {
     // Flattened — should exist directly on the edge object
     expect(edge.settlementDelayDays).toBe(1);
     // timing.delayDays must NOT exist
-    expect((edge as Record<string, unknown>)["timing"]).toBeUndefined();
+    expect((edge as unknown as Record<string, unknown>)["timing"]).toBeUndefined();
   });
 
   it("builder rejects old custody enum value PROVIDER", () => {

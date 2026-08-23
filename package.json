@@ -4,6 +4,7 @@
   "description": "Release gate that detects when a software change silently alters approved financial activity topology.",
   "type": "module",
   "scripts": {
+    "pretest": "npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "tsc --noEmit",
