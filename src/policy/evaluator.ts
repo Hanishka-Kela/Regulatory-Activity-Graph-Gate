@@ -8,6 +8,12 @@
  * (which requires the OPA binary), this evaluator provides TWO evaluation modes:
  *
  * 1. WASM mode (production): loads the pre-compiled policy.wasm artifact
+ *
+ * Policies implemented (TypeScript mode):
+ *   DL-01: POOL_PASS_THROUGH edges → BLOCK
+ *   PA-01: non-escrow direct to merchant → REVIEW
+ *   DL-02: unapproved FINANCING_PROVIDER in full graph → BLOCK
+ *   DL-03: new Obligation in delta → REVIEW (new lending relationship)
  *    using @open-policy-agent/opa-wasm. This is the canonical runtime path.
  *
  * 2. TypeScript mode (test / fallback): implements the same policy logic
@@ -154,6 +160,38 @@ function evaluatePA01(graph: ActivityGraph): PolicyViolation[] {
 }
 
 /**
+ * DL-03: New lending obligation in delta → REVIEW.
+ *
+ * Source: RBI Digital Lending Directions 2022, Para 2 + Para 5
+ * URL: https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12382
+ *
+ * Any new Obligation in GraphDelta.addedObligations triggers REVIEW.
+ * Even approved partners' obligations require human review of the specific terms.
+ */
+function evaluateDL03(
+  delta: GraphDelta,
+): PolicyViolation[] {
+  const violations: PolicyViolation[] = [];
+  for (const oblig of delta.addedObligations) {
+    violations.push({
+      policyId: "DL-03",
+      severity: "REVIEW",
+      message:
+        `New lending obligation detected: '${oblig.id}' ` +
+        `(${oblig.debtorActorId} → ${oblig.creditorActorId}, ` +
+        `tenorDays=${oblig.tenorDays ?? "N/A"}, ` +
+        `installments=${oblig.installments ?? "N/A"}, ` +
+        `feeBps=${oblig.financingFeeBps ?? "N/A"}). ` +
+        `New financing relationships require compliance review per RBI Digital Lending ` +
+        `Directions before release.`,
+      graphObjects: [{ id: oblig.id, label: oblig.label }],
+      evidenceIds: oblig.evidenceIds,
+    });
+  }
+  return violations;
+}
+
+/**
  * DL-02: Approved partner structural check.
  *
  * Source: RBI Digital Lending Guidelines 2022, Para 8
@@ -212,6 +250,7 @@ function evaluateWithTypeScript(input: PolicyInput): PolicyResult {
   const dl01 = evaluateDL01(input.proposedGraph);
   const pa01 = evaluatePA01(input.proposedGraph);
   const dl02 = evaluateDL02(input.proposedGraph, input.approvedPartners);
+  const dl03 = evaluateDL03(input.delta);
 
   // Additionally: if any graph object has hasUnverifiedEvidence, force REVIEW
   // (AI fallback with UNCERTAIN confidence → cannot safely PASS)
@@ -222,7 +261,7 @@ function evaluateWithTypeScript(input: PolicyInput): PolicyResult {
     ...input.proposedGraph.obligations,
   ].some((obj) => obj.hasUnverifiedEvidence);
 
-  const allViolations: PolicyViolation[] = [...dl01, ...pa01, ...dl02];
+  const allViolations: PolicyViolation[] = [...dl01, ...pa01, ...dl02, ...dl03];
 
   // Unverified evidence forces REVIEW unless we're already blocking
   if (hasUnverifiedEvidence && !allViolations.some((v) => v.severity === "BLOCK")) {
@@ -301,4 +340,4 @@ export function evaluatePolicySync(input: PolicyInput): PolicyResult {
 }
 
 // Re-export individual policy evaluators for testing
-export { evaluateDL01, evaluatePA01, evaluateDL02, aggregateViolations };
+export { evaluateDL01, evaluatePA01, evaluateDL02, evaluateDL03, aggregateViolations };
