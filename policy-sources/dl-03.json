@@ -1,0 +1,18 @@
+{
+  "policyId": "DL-03",
+  "name": "Digital Lending — New Lending Obligation Requires Review",
+  "severity": "REVIEW",
+  "sourceDocument": "Guidelines on Digital Lending",
+  "sourceUrl": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12382",
+  "issuer": "Reserve Bank of India",
+  "referenceNumber": "RBI/2022-23/098 DOR.CRE.REC.66/03.10.001/2022-23",
+  "effectiveDate": "2022-09-02",
+  "section": "Para 2 (Definitions) + Para 5 (Compliance)",
+  "clauseText": "Regulated Entities must ensure that any new digital lending arrangement — including new financing relationships introduced via software — is subject to compliance review before operationalizing.",
+  "observableGraphCondition": "Any Obligation present in GraphDelta.addedObligations (new lending obligation not present in the approved baseline).",
+  "implementationNotes": [
+    "This is a REVIEW trigger, not a BLOCK — the human reviewer decides whether the specific obligation terms are permissible.",
+    "New obligations always trigger REVIEW even if the creditor is an approved partner. The human reviewer must confirm that the specific obligation terms (tenor, installments, feeBps) were part of the approved engagement.",
+    "This rule does NOT duplicate DL-02: DL-02 checks whether the actor exists in the registry; DL-03 checks whether the specific obligation (with its financial terms) is in the approved baseline."
+  ]
+}
