@@ -1,0 +1,20 @@
+{
+  "policyId": "PA-01",
+  "name": "Payment Aggregator — Escrow Account Topology Check (PA-Online, Domestic INR)",
+  "severity": "REVIEW",
+  "sourceDocument": "Master Direction on Regulation of Payment Aggregators",
+  "sourceUrl": "https://www.rbi.org.in/Scripts/NotificationUser.aspx (RBI/DPSS/2025-26/141)",
+  "issuer": "Reserve Bank of India, DPSS",
+  "referenceNumber": "RBI/DPSS/2025-26/141",
+  "effectiveDate": "2025-09-15",
+  "section": "Escrow Account Maintenance provisions",
+  "clauseText": "Non-bank Payment Aggregators shall maintain a dedicated escrow account with a Scheduled Commercial Bank to hold funds collected from customers on behalf of merchants. Permissible debits from the escrow account are restricted to: (a) settlement to merchants, (b) refunds for failed or disputed transactions, and (c) pre-determined commissions to intermediaries. Operational funds shall not be co-mingled with customer transaction funds.",
+  "demoScenarioScope": "PA-Online (domestic, INR). This check does NOT cover PA-CB or PA-P flows, which have separate requirements under the 2025 Master Direction.",
+  "observableGraphCondition": "Any MoneyEdge whose destinationAccountId has custody=MERCHANT but whose sourceAccountId does NOT have custody=ESCROW_BANK.",
+  "implementationNotes": [
+    "The 2025 Master Direction supersedes the 2020-21 guidelines (RBI/2019-20/... circular) for online PAs. The 2020-21 language is not used here.",
+    "Severity is REVIEW (not BLOCK) because the policy engine may not have full context to determine whether a separate escrow path exists elsewhere in the flow topology.",
+    "PA-CB (cross-border) flows require separate InCA/OCA accounts and are out of scope for this rule.",
+    "PA-P (physical/POS) flows have a different regulatory treatment and are out of scope for this rule."
+  ]
+}

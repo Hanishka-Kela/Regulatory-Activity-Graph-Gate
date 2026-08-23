@@ -7,7 +7,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "tsc --noEmit",
-    "build:policy": "node scripts/build-policy.js",
+    "build:policy": "tsx scripts/build-policy.ts",
+    "generate:baseline": "tsx scripts/generate-baseline.ts",
     "demo:live": "node dist/cli/index.js evaluate --baseline .regulatory/approved-baseline.json --source ./fixtures/case-block"
   },
   "dependencies": {
@@ -18,6 +19,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.5.4",
+    "tsx": "^4.19.0",
     "typescript": "^5.5.4",
     "vitest": "^2.0.5"
   },

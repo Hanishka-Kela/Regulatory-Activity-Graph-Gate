@@ -1,0 +1,18 @@
+{
+  "policyId": "DL-01",
+  "name": "Digital Lending — Prohibited Pool/Pass-Through Account Pattern",
+  "severity": "BLOCK",
+  "sourceDocument": "Guidelines on Digital Lending",
+  "sourceUrl": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12382",
+  "issuer": "Reserve Bank of India",
+  "referenceNumber": "RBI/2022-23/098 DOR.CRE.REC.66/03.10.001/2022-23",
+  "effectiveDate": "2022-09-02",
+  "section": "Para 10",
+  "clauseText": "Loan servicing and repayment shall only be executed between the borrower's bank account and the RE's bank account directly. Disbursals and repayments must not be routed through a pass-through / pool account of any LSP.",
+  "observableGraphCondition": "Any MoneyEdge with mechanism=POOL_PASS_THROUGH in the proposed graph.",
+  "implementationNotes": [
+    "POOL_PASS_THROUGH mechanism value is set by the deterministic extractor only when evidence clearly indicates funds flowing through a third-party pool/treasury account before reaching the final destination.",
+    "This rule does NOT attempt to determine whether the overall product is a lending product — that is established by graph context (presence of FINANCING_PROVIDER actors and Obligation objects).",
+    "Exceptions defined in Para 10 (e.g., payment gateway as collection agent with T+0 settlement) are not handled by this rule and would require manual review if applicable."
+  ]
+}

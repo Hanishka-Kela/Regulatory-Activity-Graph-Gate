@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-08-23T00:00:00Z",
+  "partners": [
+    {
+      "actorId": "actor:partner_x",
+      "name": "Partner X NBFC",
+      "roles": ["LENDING_SERVICE_PROVIDER", "NBFC"],
+      "approvedAt": "2026-01-15T00:00:00Z",
+      "approvedBy": "compliance-team@razorpay.com",
+      "notes": "Board-approved NBFC LSP for BNPL product. Approved under RBI Digital Lending Directions 2022 Para 8."
+    }
+  ]
+}

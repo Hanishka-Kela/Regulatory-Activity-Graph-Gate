@@ -1,0 +1,19 @@
+{
+  "policyId": "DL-02",
+  "name": "Digital Lending — Approved Partner Structural Check",
+  "severity": "BLOCK",
+  "sourceDocument": "Guidelines on Digital Lending",
+  "sourceUrl": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12382",
+  "issuer": "Reserve Bank of India",
+  "referenceNumber": "RBI/2022-23/098 DOR.CRE.REC.66/03.10.001/2022-23",
+  "effectiveDate": "2022-09-02",
+  "section": "Para 8",
+  "clauseText": "The RE shall ensure that the Digital Lending App or platform used by it or its LSPs does not store any customer data on servers located outside India, and the RE shall not use the services of LSPs whose names are not contained in the board-approved list maintained by the RE.",
+  "observableGraphCondition": "Any Actor with type=FINANCING_PROVIDER in the full proposedGraph whose actorId is not present in .regulatory/approved-partners.json.",
+  "implementationNotes": [
+    "This is NOT a legal RE-LSP contract verification. It is a structural internal-approval gate.",
+    "The check is performed against the FULL proposedGraph (not just the delta) to catch actors that were silently added in a prior un-reviewed change and only gain new activity in the current PR.",
+    "Adding a partner to approved-partners.json is an explicit compliance team action — it should not be automated or auto-approved.",
+    "The approved-partners.json file must be version-controlled and require separate approval to modify."
+  ]
+}
