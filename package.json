@@ -1,0 +1,27 @@
+{
+  "name": "regulatory-activity-graph-gate",
+  "version": "0.1.0",
+  "description": "Release gate that detects when a software change silently alters approved financial activity topology.",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "tsc --noEmit",
+    "build:policy": "node scripts/build-policy.js",
+    "demo:live": "node dist/cli/index.js evaluate --baseline .regulatory/approved-baseline.json --source ./fixtures/case-block"
+  },
+  "dependencies": {
+    "@open-policy-agent/opa-wasm": "^1.9.0",
+    "commander": "^12.1.0",
+    "ts-morph": "^22.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.4",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
