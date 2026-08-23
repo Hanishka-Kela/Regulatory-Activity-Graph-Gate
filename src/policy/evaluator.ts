@@ -83,11 +83,12 @@ async function evaluateWithWasm(input: PolicyInput): Promise<PolicyResult> {
 /**
  * DL-01: Detect POOL_PASS_THROUGH mechanism edges.
  *
- * Source: RBI (Digital Lending) Directions, 2025
- * Reference: RBI/2025-26/36, DOR.STR.REC.19/21.07.001/2025-26, dated May 8, 2025
- * URL: https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12848
- * Clause: 9(i)-(iii), Loan disbursal, servicing and repayment.
- * Supersedes: Guidelines on Digital Lending, September 2, 2022 (RBI/2022-23/098)
+ * Source: RBI (Digital Lending) Directions, 2025, Para 9 (moderate confidence —
+ *   see policy-sources/dl-01.json for the cross-validation basis; not confirmed
+ *   against primary PDF text directly). Consolidates and replaces the September
+ *   2022 Guidelines on Digital Lending's Para 3 equivalent provision.
+ * URL: https://www.rbi.org.in/Scripts/NotificationUser.aspx (primary PDF is
+ *   CAPTCHA-gated; could not be fetched directly during this research pass)
  */
 function evaluateDL01(graph: ActivityGraph): PolicyViolation[] {
   const violations: PolicyViolation[] = [];
@@ -99,8 +100,8 @@ function evaluateDL01(graph: ActivityGraph): PolicyViolation[] {
         message:
           `Prohibited pool/pass-through account pattern detected on edge '${edge.id}' ` +
           `(${edge.sourceAccountId} → ${edge.destinationAccountId}). ` +
-          `RBI Digital Lending Directions clause 9 requires direct disbursement/repayment ` +
-          `without third-party pool accounts.`,
+          `RBI (Digital Lending) Directions, 2025, Para 9 (citation confidence: moderate — see policy-sources/dl-01.json) ` +
+          `requires direct disbursement/repayment without third-party pool accounts.`,
         graphObjects: [{ id: edge.id, label: edge.label }],
         evidenceIds: edge.evidenceIds,
       });
@@ -165,8 +166,12 @@ function evaluatePA01(graph: ActivityGraph): PolicyViolation[] {
 /**
  * DL-03: New lending obligation in delta → REVIEW.
  *
- * Source: RBI Digital Lending Directions 2022, Para 2 + Para 5
- * URL: https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12382
+ * Status: PROJECT-DEFINED SAFETY-NET RULE, not a specific numbered RBI clause
+ * — see policy-sources/dl-03.json. An earlier draft cited "Para 2 + Para 5"
+ * of the 2022 Guidelines; that citation could not be corroborated and was
+ * removed rather than left looking more authoritative than it is. Justified
+ * directly by Principle 8 (REVIEW is safer than PASS under uncertainty) since
+ * this rule is REVIEW, not BLOCK severity.
  *
  * Any new Obligation in GraphDelta.addedObligations triggers REVIEW.
  * Even approved partners' obligations require human review of the specific terms.
@@ -185,8 +190,8 @@ function evaluateDL03(
         `tenorDays=${oblig.tenorDays ?? "N/A"}, ` +
         `installments=${oblig.installments ?? "N/A"}, ` +
         `feeBps=${oblig.financingFeeBps ?? "N/A"}). ` +
-        `New financing relationships require compliance review per RBI Digital Lending ` +
-        `Directions before release.`,
+        `New financing relationships always require human compliance review ` +
+        `before release, per project policy DL-03 (see policy-sources/dl-03.json for rationale).`,
       graphObjects: [{ id: oblig.id, label: oblig.label }],
       evidenceIds: oblig.evidenceIds,
     });
@@ -197,15 +202,18 @@ function evaluateDL03(
 /**
  * DL-02: Approved partner structural check.
  *
- * Source: RBI (Digital Lending) Directions, 2025
- * Reference: RBI/2025-26/36, DOR.STR.REC.19/21.07.001/2025-26, dated May 8, 2025
- * URL: https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12848
- * Clauses: 5(i)-(vii) (RE-LSP due diligence and accountability), 8(iv)(b)
- *   (website disclosure of LSPs and DLAs), and 17(i)-(vii) (DLA reporting to RBI).
- * The 2025 Directions do not retain the superseded 2022 “board-approved LSP list”
- * formulation; the approved-partners registry is this system's internal control
- * implementing those current accountability, disclosure, and reporting duties.
- * Supersedes: Guidelines on Digital Lending, September 2, 2022 (RBI/2022-23/098)
+ * Source: RBI (Digital Lending) Directions, 2025, Para 17 (strong confidence —
+ *   three independent secondary sources converge on this paragraph number).
+ *   This is a MECHANISM CHANGE, not a renumbering: the superseded September
+ *   2022 Guidelines' Para 8 "board-approved LSP list" requirement is replaced
+ *   by a requirement to report all DLAs/LSPs to RBI's CIMS portal with
+ *   CCO-certified accuracy, effective 2025-06-15. This check does NOT verify
+ *   CIMS reporting occurred — it's a structural internal-governance gate that
+ *   is a necessary precondition for correct CIMS certification (an RE can't
+ *   certify a partner list it isn't tracking internally). See
+ *   policy-sources/dl-02.json for the full rationale.
+ * URL: https://www.rbi.org.in/Scripts/NotificationUser.aspx (primary PDF is
+ *   CAPTCHA-gated; could not be fetched directly during this research pass)
  *
  * Checks ALL FINANCING_PROVIDER actors in the FULL proposedGraph (not just delta)
  * per section 20 design rationale.
@@ -228,9 +236,10 @@ function evaluateDL02(
         severity: "BLOCK",
         message:
           `Financing provider actor '${actor.id}' (${actor.label}) is not present in the ` +
-          `approved-partners registry. RBI Digital Lending Directions clauses 5, 8(iv)(b), ` +
-          `and 17 require LSP accountability and disclosure. Add this partner to ` +
-          `.regulatory/approved-partners.json before merging.`,
+          `approved-partners registry. RBI (Digital Lending) Directions, 2025, Para 17 requires ` +
+          `REs to maintain an accurate internal record of DLAs/LSPs before certifying them via ` +
+          `the CIMS portal. Add this partner to .regulatory/approved-partners.json ` +
+          `before merging.`,
         graphObjects: [{ id: actor.id, label: actor.label }],
         evidenceIds: actor.evidenceIds,
       });

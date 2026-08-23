@@ -3,30 +3,38 @@
 # Policy ID: DL-02
 # Severity:  BLOCK
 #
-# Source: Reserve Bank of India — Reserve Bank of India (Digital Lending) Directions, 2025
-# Reference Number: RBI/2025-26/36, DOR.STR.REC.19/21.07.001/2025-26
-# Dated: May 8, 2025 (effective May 8, 2025; supersedes the Guidelines on Digital Lending
-#        dated September 2, 2022 and related circulars)
-# Primary URL: https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12848
+# Source: RBI (Digital Lending) Directions, 2025, Para 17 (STRONG CONFIDENCE —
+#         three independent secondary sources converge on this paragraph number).
+#         Consolidates and replaces the September 2, 2022 Guidelines' Para 8
+#         "board-approved list" requirement with a different mechanism: REs
+#         must report all deployed Digital Lending Apps (DLAs) — their own and
+#         their LSPs' — to RBI's Centralised Information Management System
+#         (CIMS) portal, keep that list current, and have the Chief Compliance
+#         Officer or a board-designated official certify its accuracy.
+# Document: "Reserve Bank of India (Digital Lending) Directions, 2025"
+# URL: https://www.rbi.org.in/Scripts/NotificationUser.aspx (primary PDF is
+#   CAPTCHA-gated; could not be fetched directly during this research pass)
+# Clause: Para 17 — CIMS reporting requirement, effective 2025-06-15 per RBI's
+#   published portal-operational timeline.
+# Effective: 2025-06-15
 #
-# Regulatory context (confirmed against the primary Directions):
+# What this rule detects:
+#   A lending-related actor (FINANCING_PROVIDER) appearing in the proposed
+#   graph whose actorId is NOT present in the approved-partners registry.
 #
-#   Clauses 5(i)-(vii), 8(iv)(b), and 17(i)-(vii) require RE-LSP due diligence and
-#   accountability, public disclosure of LSPs/DLAs, and DLA reporting to RBI's CIMS portal.
-#   The "board-approved list" language from Para 8 of the superseded 2022 Guidelines is
-#   not the formulation used in the 2025 Directions. The system operationalises the
-#   current obligations as an internal gate:
-#   any FINANCING_PROVIDER actor not present in the approved-partners registry constitutes
-#   an undisclosed/unvouched LSP engagement and must be reviewed before release.
+#   IMPORTANT: this check does NOT verify that CIMS reporting has occurred,
+#   and it is NOT a legal RE-LSP contract verification. It is a structural
+#   internal-governance gate: correctly certifying DLA/LSP data to RBI's CIMS
+#   portal requires the RE to maintain an accurate internal record of active
+#   financing partners in the first place. This rule enforces that a new
+#   financing actor is tracked in that internal record (approved-partners.json)
+#   before it reaches production — a necessary precondition for correct CIMS
+#   certification, not a replication of the CIMS mechanism itself.
 #
-# Design note: this gate is internal-structural, not a legal RE-LSP contract verification.
-# The regulatory substance (RE must maintain LSP accountability and disclose all engaged
-# partners) is current as of 2025. The specific gate mechanism (internal approved-partners
-# registry) is an implementation choice of this system.
-#
-# Observable graph condition: any Actor with type = FINANCING_PROVIDER in the full
-# proposed graph whose actorId is not present in .regulatory/approved-partners.json.
-
+#   Note: checks ALL FINANCING_PROVIDER actors in the full proposedGraph,
+#   not just those in the delta. This catches actors that were silently
+#   added in an earlier un-reviewed change and only gain new activity in
+#   this PR (per section 20 design rationale).
 
 package regulatory.dl02
 
@@ -50,7 +58,7 @@ violations contains v if {
         "policyId": "DL-02",
         "severity": "BLOCK",
         "message": sprintf(
-            "Financing provider actor '%v' (%v) is not present in the approved-partners registry. RBI Digital Lending Directions clauses 5, 8(iv)(b), and 17 require LSP accountability and disclosure. Add this partner to .regulatory/approved-partners.json before merging.",
+            "Financing provider actor '%v' (%v) is not present in the approved-partners registry. RBI (Digital Lending) Directions, 2025, Para 17 requires REs to maintain an accurate internal record of DLAs/LSPs before certifying them via the CIMS portal — this actor must be added to .regulatory/approved-partners.json before merging.",
             [actor.id, actor.label]
         ),
         "graphObjects": [{"id": actor.id, "label": actor.label}],

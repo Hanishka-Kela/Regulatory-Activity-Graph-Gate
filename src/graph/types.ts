@@ -242,10 +242,16 @@ export interface ActivityGraph {
 /**
  * ΔG = G_proposed − G_baseline
  *
- * Account identity includes id, ownerActorId, and custody, so changes to any of
- * those fields appear as a removed account plus an added account. There is no
- * separate changedAccounts collection because no account change is invisible
- * to this identity model.
+ * Note on changedAccounts: there is no changedAccounts collection, and this
+ * is not actually a limitation given how Account identity is defined.
+ * Account identity = (id, ownerActorId, custody) — see accountIdentityKey in
+ * diff.ts. Since ownerActorId and custody are themselves part of identity,
+ * an account's owner or custody cannot change while its identity stays the
+ * same; any such change is already fully captured as remove+add, exactly
+ * like a MoneyEdge whose destination changes. An earlier draft of this
+ * comment described a scenario ("identity stays the same but those values
+ * change") that is impossible under this identity definition — corrected
+ * here rather than left in place.
  */
 export interface GraphDelta {
   addedActors: Actor[];

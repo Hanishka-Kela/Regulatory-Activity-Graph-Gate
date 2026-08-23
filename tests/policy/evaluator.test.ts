@@ -106,6 +106,11 @@ describe("CASE 2 — REVIEW: Partner X installment plan, approved partner", () =
     expect(result.violations.some((v) => v.severity === "REVIEW")).toBe(true);
   });
 
+  it("DL-03 fires (new obligation always requires review, even for approved partners) — regression test: main.rego previously omitted the dl03 import from its aggregate decision, so this assertion exists specifically to catch that class of bug again", () => {
+    const result = evaluatePolicySync(input);
+    expect(result.violations.some((v) => v.policyId === "DL-03")).toBe(true);
+  });
+
   it("no BLOCK violations (Partner X is approved)", () => {
     const result = evaluatePolicySync(input);
     expect(result.violations.some((v) => v.severity === "BLOCK")).toBe(false);

@@ -2,7 +2,11 @@
  * Phase 2 tests: DL-02 policy
  *
  * DL-02: Approved partner structural check
- * Source: RBI Digital Lending Guidelines 2022, Para 8
+ * Source: RBI (Digital Lending) Directions, 2025, Para 17 (strong confidence — see
+ *   policy-sources/dl-02.json). This is a mechanism change from the superseded
+ *   September 2022 Guidelines' Para 8 "board-approved list" — the 2025 Directions
+ *   instead require CIMS-portal reporting with CCO-certified accuracy. This check
+ *   enforces the internal-record precondition for correct CIMS certification.
  *
  * Tests:
  * - PASS: FINANCING_PROVIDER actor IS in approved registry
@@ -102,9 +106,10 @@ describe("DL-02 — BLOCK: unapproved FINANCING_PROVIDER", () => {
     expect(violations[0].graphObjects[0].id).toBe("actor:partner_x");
   });
 
-  it("violation message mentions Para 8", () => {
+  it("violation message cites the current RBI (Digital Lending) Directions, 2025, Para 17 (CIMS reporting)", () => {
     const violations = evaluateDL02(reviewGraph, emptyRegistry);
-    expect(violations[0].message).toContain("Para 8");
+    expect(violations[0].message).toContain("Digital Lending) Directions, 2025");
+    expect(violations[0].message).toContain("Para 17");
   });
 
   it("violation message mentions approved-partners.json", () => {

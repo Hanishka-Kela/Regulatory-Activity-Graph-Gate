@@ -3,26 +3,17 @@
   "name": "Digital Lending — Prohibited Pool/Pass-Through Account Pattern",
   "severity": "BLOCK",
   "sourceDocument": "Reserve Bank of India (Digital Lending) Directions, 2025",
-  "supersedes": "Guidelines on Digital Lending (September 2, 2022, RBI/2022-23/098 DOR.CRE.REC.66/03.10.001/2022-23)",
-  "primaryUrl": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12848",
-  "issuer": "Reserve Bank of India, Department of Regulation",
-  "referenceNumber": "RBI/2025-26/36, DOR.STR.REC.19/21.07.001/2025-26",
-  "dated": "2025-05-08",
+  "sourceUrl": "https://www.rbi.org.in/Scripts/NotificationUser.aspx",
+  "issuer": "Reserve Bank of India",
+  "referenceNumber": "not independently confirmed — RBI's notification PDF is CAPTCHA-gated and could not be fetched directly during this research pass",
   "effectiveDate": "2025-05-08",
-  "clause": "9(i)-(iii), Loan disbursal, servicing and repayment",
-  "clauseStatus": "PRIMARY SOURCE CONFIRMED",
-  "clauseStatusDetail": "The official RBI notification identifies clause 9(i)-(iii) as the loan disbursal, servicing and repayment requirements.",
-  "substanceConfirmed": true,
-  "substanceCorroboration": [
-    "nishithdesai.com analysis of RBI Digital Lending Directions 2025",
-    "lawrbit.com summary of Digital Lending Directions 2025",
-    "legal500.com analysis: RBI Digital Lending Directions 2025",
-    "synergialegal.com: Digital Lending Directions 2025 analysis"
-  ],
-  "ruleSubstance": "Loan disbursements must be made directly into the bank account of the borrower. The RE must ensure that in no case shall the disbursal be made to a third-party account, including the accounts of any LSP or DLA. All loan servicing and repayment shall be executed by the borrower directly in the RE's bank account without the use of any pass-through or pool account of any third party, including LSPs.",
+  "section": "Para 9 (moderate confidence)",
+  "confidenceNote": "This document and provision consolidate and replace the September 2, 2022 Guidelines on Digital Lending, Para 3 ('Loan Disbursal, Servicing and Repayment'), which contained the equivalent prohibition. The Para 9 numbering in the 2025 Directions comes from a single secondary legal-analysis source (Synergia Legal), cross-validated against two independently-sourced paragraph numbers elsewhere in the same document (Para 6 — multi-lender arrangements; Para 17 — DLA/CIMS reporting — both confirmed by separate independent sources). This raises confidence above a single unverified claim, but the paragraph number has not been confirmed against RBI's primary PDF text directly. Verify against the primary source before citing this section number in any external-facing submission material.",
+  "clauseText": "Loan disbursal and repayment must be executed directly between the borrower's bank account and the Regulated Entity's (RE) bank account, without routing through any pass-through or pool account of a Lending Service Provider (LSP) or any other third party, except for disbursals covered exclusively under statutory or regulatory mandate, flow of money between REs for co-lending transactions, or disbursals for specific end-use paid directly to the end-beneficiary's account.",
   "observableGraphCondition": "Any MoneyEdge with mechanism=POOL_PASS_THROUGH in the proposed graph.",
   "implementationNotes": [
     "POOL_PASS_THROUGH mechanism value is set by the deterministic extractor only when evidence clearly indicates funds flowing through a third-party pool/treasury account before reaching the final destination.",
-    "The 2025 Directions supersede the 2022 Guidelines."
+    "This rule does NOT attempt to determine whether the overall product is a lending product — that is established by graph context (presence of FINANCING_PROVIDER actors and Obligation objects).",
+    "The regulatory exceptions listed in clauseText (statutory mandate, co-lending, specific end-use) are not handled by this rule and would require manual review if applicable — this rule is intentionally over-inclusive rather than attempting to encode the exceptions, per the project's principle that REVIEW/BLOCK on uncertainty is safer than a false PASS."
   ]
 }

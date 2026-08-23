@@ -2,7 +2,9 @@
  * Phase 2 tests: DL-01 policy
  *
  * DL-01: Prohibited pool/pass-through account pattern
- * Source: RBI Digital Lending Guidelines 2022, Para 10
+ * Source: RBI (Digital Lending) Directions, 2025, Para 9 (moderate confidence — see
+ *   policy-sources/dl-01.json). Consolidates and replaces the September 2022
+ *   Guidelines on Digital Lending's Para 3 equivalent provision.
  *
  * Tests:
  * - PASS: no POOL_PASS_THROUGH edges
@@ -60,9 +62,10 @@ describe("DL-01 — BLOCK cases", () => {
     expect(graphObj).toBeDefined();
   });
 
-  it("violation message mentions Para 10", () => {
+  it("violation message cites the current RBI (Digital Lending) Directions, 2025, Para 9", () => {
     const violations = evaluateDL01(blockGraph);
-    expect(violations[0].message).toContain("Para 10");
+    expect(violations[0].message).toContain("Digital Lending) Directions, 2025");
+    expect(violations[0].message).toContain("Para 9");
   });
 });
 

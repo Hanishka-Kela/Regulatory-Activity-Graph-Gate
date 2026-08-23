@@ -3,28 +3,18 @@
   "name": "Digital Lending — Approved Partner Structural Check",
   "severity": "BLOCK",
   "sourceDocument": "Reserve Bank of India (Digital Lending) Directions, 2025",
-  "supersedes": "Guidelines on Digital Lending (September 2, 2022, RBI/2022-23/098 DOR.CRE.REC.66/03.10.001/2022-23)",
-  "primaryUrl": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12848",
-  "issuer": "Reserve Bank of India, Department of Regulation",
-  "referenceNumber": "RBI/2025-26/36, DOR.STR.REC.19/21.07.001/2025-26",
-  "dated": "2025-05-08",
-  "effectiveDate": "2025-05-08",
-  "clause": "5(i)-(vii), 8(iv)(b), and 17(i)-(vii)",
-  "clauseStatus": "PRIMARY SOURCE CONFIRMED; NO BOARD-APPROVED-LSP-LIST REQUIREMENT",
-  "clauseStatusDetail": "The official RBI notification confirms current RE-LSP accountability and due diligence in clause 5, public LSP/DLA disclosure in clause 8(iv)(b), and DLA reporting to RBI in clause 17. It does not use the superseded 2022 board-approved LSP list formulation.",
-  "substanceConfirmed": true,
-  "substanceCorroboration": [
-    "nishithdesai.com analysis of RBI Digital Lending Directions 2025",
-    "lawrbit.com summary of Digital Lending Directions 2025",
-    "synergialegal.com: Digital Lending Directions 2025 — LSP website disclosure and CIMS reporting requirements"
-  ],
-  "ruleSubstance": "The 2025 Directions require REs to: (a) maintain an updated public website listing all engaged LSPs and DLAs; (b) report all DLAs to RBI's CIMS (Centralised Information Management System) portal; (c) take full responsibility for all actions of their engaged LSPs. The RE must ensure all LSPs comply with applicable RBI directions. The 'board-approved list' language from Para 8 of the superseded 2022 Guidelines has evolved — the 2025 Directions focus on disclosure and CIMS reporting rather than a private board-approved list.",
-  "implementationDesignNote": "This gate is internal-structural, not a legal RE-LSP contract verification. The regulatory substance (RE must maintain LSP accountability and disclose all engaged partners) is current under the 2025 Directions. The specific gate mechanism (internal approved-partners registry keyed on actorId) is an implementation choice of this system, operationalising the RE's accountability obligation as a pre-release check. Any FINANCING_PROVIDER actor not in the registry is treated as an undisclosed/unvouched LSP engagement.",
+  "sourceUrl": "https://www.rbi.org.in/Scripts/NotificationUser.aspx",
+  "issuer": "Reserve Bank of India",
+  "referenceNumber": "not independently confirmed — RBI's notification PDF is CAPTCHA-gated and could not be fetched directly during this research pass",
+  "effectiveDate": "2025-06-15",
+  "section": "Para 17 (strong confidence — three independent secondary sources converge on this number)",
+  "confidenceNote": "This is a mechanism change, not a renumbering. The September 2022 Guidelines' Para 8 required LSPs to be drawn from a 'board-approved list' maintained internally by the RE. The 2025 Directions replace that mechanism: REs must instead report all deployed Digital Lending Apps (DLAs) — their own and their LSPs' — to RBI's Centralised Information Management System (CIMS) portal, keep the list current as engagements change, and have the Chief Compliance Officer or a board-designated official certify the data's accuracy. This provision took effect June 15, 2025 per the RBI's own portal-operational timeline. Three independent sources (a legal-analysis firm, a law-firm notification summary, and a second law-firm analysis) converge on Para 17 for this requirement.",
+  "clauseText": "Regulated Entities shall report details of all Digital Lending Apps deployed by themselves or their Lending Service Providers through the RBI's Centralised Information Management System (CIMS) portal, and shall ensure this list is kept current and its accuracy certified by the Chief Compliance Officer or a board-designated official. RBI publishes the resulting list on its website, sourced from RE-submitted data without independent RBI validation, for the limited purpose of allowing customers to verify a DLA's claimed association with an RE.",
   "observableGraphCondition": "Any Actor with type=FINANCING_PROVIDER in the full proposedGraph whose actorId is not present in .regulatory/approved-partners.json.",
   "implementationNotes": [
-    "Check is performed against the FULL proposedGraph (not just delta) to catch actors silently added in a prior un-reviewed change.",
-    "Adding a partner to approved-partners.json is an explicit compliance team action — it must not be automated.",
-    "The 2025 Directions have restructured the old 2022 board-approved-list concept into current due-diligence, accountability, disclosure, and reporting obligations.",
-    "Note on old citation error: previous implementation incorrectly cited the clause text of 2022 Para 8 — the quote about data localisation was used as the source for the board-approved list requirement. These are distinct sub-clauses even in the 2022 document."
+    "This check is NOT a verification that CIMS reporting has actually occurred, and it is NOT a legal RE-LSP contract check. It is a structural internal-governance gate: RBI's CIMS-certification obligation requires an RE to maintain an accurate internal record of active financing partners in the first place, in order to certify that record's accuracy to RBI. This check enforces that a new financing actor is tracked in the internal record (approved-partners.json) before it reaches production, which is a necessary precondition for correct CIMS certification, not a replication of the CIMS mechanism itself.",
+    "The check is performed against the FULL proposedGraph (not just the delta) to catch actors that were silently added in a prior un-reviewed change and only gain new activity in the current PR.",
+    "Adding a partner to approved-partners.json is an explicit compliance team action — it should not be automated or auto-approved.",
+    "The approved-partners.json file must be version-controlled and require separate approval to modify."
   ]
 }

@@ -10,10 +10,13 @@
  * If identity changes: removed + added.
  * If identity remains but financial-semantic fields change: changedMoneyEdges / changedObligations.
  *
- * Account identity includes id, ownerActorId, and custody, so changes to any of
- * those fields are represented as a removed account plus an added account.
- * There is no separate changedAccounts collection because no account change is
- * invisible to this identity model.
+ * Known limitation: changedAccounts is not tracked as a separate bucket —
+ * this is not actually a gap. Since Account identity is (id, ownerActorId,
+ * custody), an owner or custody change necessarily changes identity, so it
+ * is already fully captured as remove+add, not silently lost. (An earlier
+ * version of this comment incorrectly described a scenario where identity
+ * stays the same while those fields change — impossible given the identity
+ * definition below; corrected here.)
  */
 
 import type {
@@ -158,8 +161,9 @@ export function computeGraphDelta(
     actorIdentityKey,
   );
 
-  // Accounts: identity = {id, ownerActorId, custody}
-  // NOTE: changedAccounts not tracked — see known limitation in GraphDelta type.
+  // Accounts: identity = {id, ownerActorId, custody}. An owner/custody change
+  // is captured as remove+add since those fields are part of identity — see
+  // the corrected note in the GraphDelta doc comment above.
   const accounts = diffSimple(
     baseline.accounts,
     proposed.accounts,
