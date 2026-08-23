@@ -23,7 +23,6 @@
   "observableGraphCondition": "Any MoneyEdge with mechanism=POOL_PASS_THROUGH in the proposed graph.",
   "implementationNotes": [
     "POOL_PASS_THROUGH mechanism value is set by the deterministic extractor only when evidence clearly indicates funds flowing through a third-party pool/treasury account before reaching the final destination.",
-    "The 2025 Directions supersede the 2022 Guidelines. The old citation (Para 10 of the 2022 Guidelines) was incorrect."
-    "Note on 2022 old citation error: the previous implementation incorrectly cited Para 10 of the 2022 Guidelines. Even in the 2022 document, Para 10 covered data localisation / CERSAI requirements, not the disbursal flow rule."
+    "The 2025 Directions supersede the 2022 Guidelines."
   ]
 }

@@ -107,9 +107,9 @@ Flattened top-level field. **Never** use the old `timing.delayDays` nested form.
 
 | ID | Rule | Severity | Source |
 |----|------|----------|--------|
-| DL-01 | Pool/pass-through account detected (`POOL_PASS_THROUGH` mechanism) | **BLOCK** | RBI Digital Lending Guidelines 2022, Para 10 |
+| DL-01 | Pool/pass-through account detected (`POOL_PASS_THROUGH` mechanism) | **BLOCK** | RBI (Digital Lending) Directions, 2025, clause 9(i)-(iii) |
 | PA-01 | PA funds reach merchant without ESCROW_BANK intermediary | **REVIEW** | RBI PA Master Direction 2025, RBI/DPSS/2025-26/141 |
-| DL-02 | `FINANCING_PROVIDER` actor not in approved-partners registry | **BLOCK** | RBI Digital Lending Guidelines 2022, Para 8 |
+| DL-02 | `FINANCING_PROVIDER` actor not in approved-partners registry | **BLOCK** | RBI (Digital Lending) Directions, 2025, clauses 5, 8(iv)(b), and 17; internal registry control |
 | DL-03 | New `Obligation` appears in delta (new lending relationship) | **REVIEW** | RBI Digital Lending Guidelines 2022, Para 2+5 |
 
 Each policy has a corresponding source metadata file in `policy-sources/`.
@@ -196,7 +196,7 @@ type Decision = "PASS" | "REVIEW" | "BLOCK";
 
 ## Known Limitations
 
-1. **No `changedAccounts`**: If an account keeps the same identity (`id + ownerActorId + custody`) but those values change, it will appear as remove+add. There is currently no `changedAccounts` collection in `GraphDelta`.
+1. **No separate `changedAccounts`**: Account identity includes `id + ownerActorId + custody`, so changes to any of those fields appear as remove+add. No account change is invisible to this identity model.
 
 2. **No WASM artifact committed**: OPA binary is required to build `policy.wasm`. Tests use the TypeScript evaluator. Compile with `npm run build:policy` and commit the WASM before deploying the WASM runtime path.
 
