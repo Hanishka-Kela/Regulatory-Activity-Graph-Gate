@@ -204,7 +204,9 @@ type Decision = "PASS" | "REVIEW" | "BLOCK";
 
 3. **PA-01 scope**: Only covers PA-Online (domestic INR) flows. PA-CB and PA-P have different requirements not encoded here.
 
-4. **Phase 3–7 not yet implemented**: Evidence extraction (ts-morph), AI semantic fallback, CLI, GitHub Action, Docker are pending.
+4. **Deterministic extraction scope**: Phase 3 recognizes only the three documented SDK call shapes after AST declaration resolution. Unmatched or ambiguous calls deliberately produce no deterministic evidence; they are Phase 5's semantic-fallback boundary.
+
+5. **Phase 4–7 not yet implemented**: Evidence-to-graph construction, AI semantic fallback, CLI, GitHub Action, Docker, and audit artifacts are pending.
 
 ---
 
@@ -214,7 +216,7 @@ type Decision = "PASS" | "REVIEW" | "BLOCK";
 |-------|-------------|--------|
 | 1 | Graph types, canonicalization, hashing, diff, fixtures, replay tests | ✅ Done (57 tests) |
 | 2 | OPA/Rego policies, TypeScript evaluator, policy tests | ✅ Done (61 tests) |
-| 3 | EvidenceAtom extraction (ts-morph adapters) | ⏳ Pending |
+| 3 | EvidenceAtom extraction (ts-morph adapters) | ✅ Done (4 tests) |
 | 4 | ActivityGraphBuilder from EvidenceAtoms | ⏳ Pending |
 | 5 | AI semantic fallback (offline fixture mode) | ⏳ Pending |
 | 6 | CLI + GitHub Action | ⏳ Pending |

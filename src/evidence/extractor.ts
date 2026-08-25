@@ -75,7 +75,7 @@ function extractEvidenceFromSourceFile(sourceFile: SourceFile, options: Extracti
   return sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)
     .flatMap((call) => {
       const adapter = findAdapter(call);
-      return adapter && resolvesToExpectedClient(sourceFile, adapter)
+      return adapter && resolvesToExpectedClient(call, adapter)
         ? [toEvidenceAtom(call, adapter, options.commitSha, file)]
         : [];
     });
@@ -101,12 +101,11 @@ function findAdapter(call: CallExpression): KnownAdapter | undefined {
   );
 }
 
-function resolvesToExpectedClient(sourceFile: SourceFile, adapter: KnownAdapter): boolean {
-  const declarations = sourceFile.getDescendantsOfKind(SyntaxKind.Identifier)
-    .filter((identifier) => identifier.getText() === adapter.root)
-    .flatMap((identifier) => identifier.getDefinitions())
+function resolvesToExpectedClient(call: CallExpression, adapter: KnownAdapter): boolean {
+  const declarations = rootIdentifier(call)
+    ?.getDefinitions()
     .map((definition) => definition.getDeclarationNode())
-    .filter((node): node is Node => node !== undefined);
+    .filter((node): node is Node => node !== undefined) ?? [];
 
   return declarations.some((declaration) => {
     const importDeclaration = declaration.getFirstAncestorByKind(SyntaxKind.ImportDeclaration);
@@ -116,6 +115,12 @@ function resolvesToExpectedClient(sourceFile: SourceFile, adapter: KnownAdapter)
     const typeText = variable?.getTypeNode()?.getText();
     return typeText !== undefined && adapter.localTypes.includes(typeText);
   });
+}
+
+function rootIdentifier(call: CallExpression) {
+  let current: Node = call.getExpression();
+  while (Node.isPropertyAccessExpression(current)) current = current.getExpression();
+  return Node.isIdentifier(current) ? current : undefined;
 }
 
 function toEvidenceAtom(

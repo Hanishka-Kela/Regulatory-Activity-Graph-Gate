@@ -23,16 +23,23 @@ describe("deterministic evidence extraction", () => {
       execution: { isInsideFunction: true, isReachableFromExportedHandler: true, isAwaited: true },
       derivation: "DETERMINISTIC_ADAPTER",
       confidence: "SUPPORTED",
-      source: { file: fixture("adapters.ts"), span: { startLine: 7, startColumn: 9, endLine: 7 } },
+      source: {
+        file: fixture("adapters.ts"),
+        span: { startLine: 10, startColumn: 9, endLine: 10, endColumn: 85 },
+      },
     });
-    expect(atoms[1]?.arguments).toEqual({
-      arg0: { type: "LITERAL", value: 90 },
-      arg1: { type: "REFERENCE", expression: "customerId" },
-      arg2: { type: "UNKNOWN", expression: 'condition ? "three" : "one"' },
+    expect(atoms[1]).toMatchObject({
+      arguments: {
+        arg0: { type: "LITERAL", value: 90 },
+        arg1: { type: "REFERENCE", expression: "customerId" },
+        arg2: { type: "UNKNOWN", expression: 'condition ? "three" : "one"' },
+      },
+      source: { span: { startLine: 14, startColumn: 10, endLine: 14, endColumn: 98 } },
     });
     expect(atoms[2]).toMatchObject({
       arguments: { arg0: { type: "UNKNOWN", expression: "{ amount }" } },
       execution: { isAwaited: false },
+      source: { span: { startLine: 18, startColumn: 3, endLine: 18, endColumn: 38 } },
     });
   });
 
