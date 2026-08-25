@@ -6,8 +6,8 @@
  * Category A — identity / financial semantics — PARTICIPATE in hash:
  *   Actor:       id, type
  *   Account:     id, ownerActorId, custody
- *   MoneyEdge:   id, sourceAccountId, destinationAccountId, mechanism, settlementDelayDays
- *   Obligation:  id, debtorActorId, creditorActorId, tenorDays, installments, financingFeeBps
+ *   MoneyEdge:   sourceAccountId, destinationAccountId, mechanism, settlementDelayDays
+ *   Obligation:  debtorActorId, creditorActorId, tenorDays, installments, financingFeeBps
  *
  * Category B — display provenance — DO NOT participate in hash:
  *   label, evidenceIds, source spans, file paths
