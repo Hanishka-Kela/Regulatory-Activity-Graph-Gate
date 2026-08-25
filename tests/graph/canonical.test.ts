@@ -18,6 +18,7 @@ import {
 } from "../../src/graph/canonical.js";
 import { ActivityGraphBuilder } from "../../src/graph/builder.js";
 import { baselineGraph } from "../../fixtures/baseline.js";
+import { reviewGraph } from "../../fixtures/case-review.js";
 
 describe("canonical hash — Category A changes alter the hash", () => {
   it("baseline hash is stable across calls", () => {
@@ -132,6 +133,15 @@ describe("canonical hash — Category B/C changes do NOT alter the hash", () => 
       metadata: { ...baselineGraph.metadata, commitSha: "different-commit-sha" },
     };
     expect(hashGraph(modified)).toBe(baselineGraph.hash);
+  });
+
+  it("changing money-edge and obligation display IDs does NOT change the hash", () => {
+    const modified = {
+      ...baselineGraph,
+      moneyEdges: baselineGraph.moneyEdges.map((edge) => ({ ...edge, id: `display:${edge.id}` })),
+    };
+    expect(hashGraph(modified)).toBe(baselineGraph.hash);
+    expect(hashGraph({ ...reviewGraph, obligations: reviewGraph.obligations.map((obligation) => ({ ...obligation, id: `display:${obligation.id}` })) })).toBe(reviewGraph.hash);
   });
 });
 

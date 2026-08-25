@@ -92,6 +92,8 @@ export class ActivityGraphBuilder {
   private accountIds = new Set<string>();
   private moneyEdgeIds = new Set<string>();
   private obligationIds = new Set<string>();
+  private moneyEdgeEndpoints = new Set<string>();
+  private obligationParties = new Set<string>();
 
   addActor(actor: Actor): this {
     ActorSchema.parse(actor);
@@ -124,6 +126,10 @@ export class ActivityGraphBuilder {
     if (this.moneyEdgeIds.has(edge.id)) {
       throw new Error(`Duplicate money edge id: ${edge.id}`);
     }
+    const endpoints = `${edge.sourceAccountId}\u0000${edge.destinationAccountId}`;
+    if (this.moneyEdgeEndpoints.has(endpoints)) {
+      throw new Error(`Duplicate money edge endpoints: ${edge.sourceAccountId} -> ${edge.destinationAccountId}`);
+    }
     if (!this.accountIds.has(edge.sourceAccountId)) {
       throw new Error(
         `MoneyEdge ${edge.id} references unknown source account ${edge.sourceAccountId}`,
@@ -135,6 +141,7 @@ export class ActivityGraphBuilder {
       );
     }
     this.moneyEdgeIds.add(edge.id);
+    this.moneyEdgeEndpoints.add(endpoints);
     this.moneyEdges.push(edge);
     return this;
   }
@@ -143,6 +150,10 @@ export class ActivityGraphBuilder {
     ObligationSchema.parse(obligation);
     if (this.obligationIds.has(obligation.id)) {
       throw new Error(`Duplicate obligation id: ${obligation.id}`);
+    }
+    const parties = `${obligation.debtorActorId}\u0000${obligation.creditorActorId}`;
+    if (this.obligationParties.has(parties)) {
+      throw new Error(`Duplicate obligation parties: ${obligation.debtorActorId} -> ${obligation.creditorActorId}`);
     }
     if (!this.actorIds.has(obligation.debtorActorId)) {
       throw new Error(
@@ -155,6 +166,7 @@ export class ActivityGraphBuilder {
       );
     }
     this.obligationIds.add(obligation.id);
+    this.obligationParties.add(parties);
     this.obligations.push(obligation);
     return this;
   }
@@ -204,6 +216,9 @@ export function buildGraphFromEvidence(
   });
 
   for (const atom of evidence) {
+    // A bare payments.create atom has no independently evidenced destination
+    // account in Phase 3. It is intentionally not converted into a money edge.
+    if (atom.symbol === "razorpayClient.payments.create") continue;
     if (atom.symbol === "partnerXClient.credit.createInstallmentPlan") {
       const debtor = stringValue(atom, "arg0", "debtor-actor");
       const creditor = stringValue(atom, "arg1", "creditor-actor");

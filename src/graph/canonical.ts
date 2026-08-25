@@ -44,7 +44,6 @@ export type CanonicalAccount = {
 };
 
 export type CanonicalMoneyEdge = {
-  id: string;
   sourceAccountId: string;
   destinationAccountId: string;
   mechanism: MoneyEdge["mechanism"];
@@ -52,7 +51,6 @@ export type CanonicalMoneyEdge = {
 };
 
 export type CanonicalObligation = {
-  id: string;
   debtorActorId: string;
   creditorActorId: string;
   tenorDays: number | null;
@@ -81,7 +79,6 @@ export function canonicalAccount(a: Account): CanonicalAccount {
 
 export function canonicalMoneyEdge(e: MoneyEdge): CanonicalMoneyEdge {
   return {
-    id: e.id,
     sourceAccountId: e.sourceAccountId,
     destinationAccountId: e.destinationAccountId,
     mechanism: e.mechanism,
@@ -92,7 +89,6 @@ export function canonicalMoneyEdge(e: MoneyEdge): CanonicalMoneyEdge {
 
 export function canonicalObligation(o: Obligation): CanonicalObligation {
   return {
-    id: o.id,
     debtorActorId: o.debtorActorId,
     creditorActorId: o.creditorActorId,
     tenorDays: o.tenorDays ?? null,
@@ -107,6 +103,14 @@ export function canonicalObligation(o: Obligation): CanonicalObligation {
 
 function byId<T extends { id: string }>(arr: T[]): T[] {
   return [...arr].sort((a, b) => a.id.localeCompare(b.id));
+}
+
+function byMoneyEdgeIdentity(arr: MoneyEdge[]): MoneyEdge[] {
+  return [...arr].sort((a, b) => `${a.sourceAccountId}\u0000${a.destinationAccountId}`.localeCompare(`${b.sourceAccountId}\u0000${b.destinationAccountId}`));
+}
+
+function byObligationIdentity(arr: Obligation[]): Obligation[] {
+  return [...arr].sort((a, b) => `${a.debtorActorId}\u0000${a.creditorActorId}`.localeCompare(`${b.debtorActorId}\u0000${b.creditorActorId}`));
 }
 
 // ---------------------------------------------------------------------------
@@ -124,8 +128,8 @@ export function serializeCanonicalGraph(graph: ActivityGraph): string {
   const canonical: CanonicalGraph = {
     actors: byId(graph.actors).map(canonicalActor),
     accounts: byId(graph.accounts).map(canonicalAccount),
-    moneyEdges: byId(graph.moneyEdges).map(canonicalMoneyEdge),
-    obligations: byId(graph.obligations).map(canonicalObligation),
+    moneyEdges: byMoneyEdgeIdentity(graph.moneyEdges).map(canonicalMoneyEdge),
+    obligations: byObligationIdentity(graph.obligations).map(canonicalObligation),
   };
   return JSON.stringify(canonical);
 }
