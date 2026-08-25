@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { extractEvidenceFromFile } from "../evidence/extractor.js";
 import { buildGraphFromEvidence } from "../graph/builder.js";
@@ -8,7 +8,7 @@ import { evaluatePolicySync } from "../policy/evaluator.js";
 import type { ActivityGraph } from "../graph/types.js";
 import type { ApprovedPartnerRegistry } from "../policy/types.js";
 
-function files(path: string): string[] { return readdirSync(path, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? files(join(path, entry.name)) : entry.name.endsWith(".ts") ? [join(path, entry.name)] : []); }
+function files(path: string): string[] { if (!statSync(path).isDirectory()) return path.endsWith(".ts") ? [path] : []; return readdirSync(path, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? files(join(path, entry.name)) : entry.name.endsWith(".ts") ? [join(path, entry.name)] : []); }
 function display(decision: string) { return decision === "REVIEW" ? "REVIEW_REQUIRED" : decision; }
 export function evaluate(baselinePath: string, sourcePath: string) {
   const baseline = JSON.parse(readFileSync(baselinePath, "utf8")).canonicalGraph as ActivityGraph;
