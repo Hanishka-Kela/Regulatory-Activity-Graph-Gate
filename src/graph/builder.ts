@@ -219,6 +219,10 @@ export function buildGraphFromEvidence(
     // A bare payments.create atom has no independently evidenced destination
     // account in Phase 3. It is intentionally not converted into a money edge.
     if (atom.symbol === "razorpayClient.payments.create") continue;
+    if (atom.derivation === "AI_INFERRED" && atom.confidence === "UNCERTAIN") {
+      const unknownActor = `unknown:${atom.id}:actor`;
+      addActor(unknownActor, "UNKNOWN", atom);
+    }
     if (atom.symbol === "partnerXClient.credit.createInstallmentPlan") {
       const debtor = stringValue(atom, "arg0", "debtor-actor");
       const creditor = stringValue(atom, "arg1", "creditor-actor");

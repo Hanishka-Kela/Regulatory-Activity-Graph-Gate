@@ -4,6 +4,7 @@ import { z } from "zod";
 import { Node, Project, SyntaxKind } from "ts-morph";
 import { extractEvidenceFromFile } from "./extractor.js";
 import type { EvidenceAtom, Value } from "./types.js";
+import type { PolicyResult } from "../policy/types.js";
 
 const ValueSchema = z.discriminatedUnion("type", [z.object({ type: z.literal("LITERAL"), value: z.union([z.string(), z.number(), z.boolean(), z.null()]) }), z.object({ type: z.literal("REFERENCE"), expression: z.string() }), z.object({ type: z.literal("UNKNOWN"), expression: z.string() })]);
 const ResponseSchema = z.object({ relevant: z.boolean(), symbol: z.string(), operation: z.string(), arguments: z.record(ValueSchema), confidence: z.enum(["SUPPORTED", "UNCERTAIN"]) }).strict();
@@ -42,4 +43,9 @@ export async function extractLiveSemanticCandidate(candidate: CandidateCall, cli
   return failsafe("Semantic fallback unavailable");
 }
 export function failsafe(message: string): FallbackOutcome { return { atoms: [], failsafe: { policyId: "EXTRACTION_FAILSAFE", severity: "REVIEW", message, graphObjects: [], evidenceIds: [] } }; }
+/** Applies only extraction-shape failures after normal deterministic policy evaluation. */
+export function applyExtractionFailsafe(result: PolicyResult, outcome: FallbackOutcome): PolicyResult {
+  if (!outcome.failsafe || result.decision === "BLOCK") return result;
+  return { ...result, decision: "REVIEW", violations: [...result.violations, outcome.failsafe] };
+}
 function value(node: Node): Value { if (Node.isStringLiteral(node)) return { type: "LITERAL", value: node.getLiteralText() }; if (Node.isNumericLiteral(node)) return { type: "LITERAL", value: Number(node.getText()) }; if (Node.isIdentifier(node) || Node.isPropertyAccessExpression(node)) return { type: "REFERENCE", expression: node.getText() }; return { type: "UNKNOWN", expression: node.getText() }; }
