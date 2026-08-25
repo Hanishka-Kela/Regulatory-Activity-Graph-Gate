@@ -12,6 +12,7 @@ import type {
   MoneyEdge,
   Obligation,
   ActivityGraph,
+  EvidenceAtom,
 } from "./types.js";
 import { hashGraph } from "./canonical.js";
 
@@ -177,4 +178,113 @@ export class ActivityGraphBuilder {
 
     return { ...partial, hash };
   }
+}
+
+/**
+ * Fixed Phase 4 mapping for the three Phase 3 adapters. The tuple layouts are
+ * deliberately fixture-authored and concrete; this is not an adapter registry.
+ * A Razorpay payment without a separately evidenced transfer destination adds
+ * no money edge, because its atom alone establishes no destination account.
+ */
+export function buildGraphFromEvidence(
+  evidence: EvidenceAtom[],
+  commitSha: string,
+  label?: string,
+): ActivityGraph {
+  const actors = new Map<string, Actor>();
+  const accounts = new Map<string, Account>();
+  const edges = new Map<string, MoneyEdge>();
+  const obligations = new Map<string, Obligation>();
+
+  const addActor = (id: string, type: Actor["type"], atom: EvidenceAtom) => merge(actors, {
+    id, label: id, type, ...provenance([atom]),
+  });
+  const addAccount = (id: string, ownerActorId: string, custody: Account["custody"], atom: EvidenceAtom) => merge(accounts, {
+    id, label: id, ownerActorId, custody, ...provenance([atom]),
+  });
+
+  for (const atom of evidence) {
+    if (atom.symbol === "partnerXClient.credit.createInstallmentPlan") {
+      const debtor = stringValue(atom, "arg0", "debtor-actor");
+      const creditor = stringValue(atom, "arg1", "creditor-actor");
+      addActor(debtor, "CUSTOMER", atom);
+      addActor(creditor, "FINANCING_PROVIDER", atom);
+      merge(obligations, {
+        id: `obligation:${debtor}:${creditor}`,
+        label: "Partner X installment plan",
+        debtorActorId: debtor,
+        creditorActorId: creditor,
+        tenorDays: positiveNumber(atom.arguments.arg2),
+        installments: positiveNumber(atom.arguments.arg3),
+        financingFeeBps: nonNegativeNumber(atom.arguments.arg4),
+        ...provenance([atom]),
+      });
+    }
+
+    if (atom.symbol === "partnerXClient.transfer") {
+      const sourceAccountId = stringValue(atom, "arg0", "source-account");
+      const destinationAccountId = stringValue(atom, "arg1", "destination-account");
+      const sourceActorId = stringValue(atom, "arg3", "source-actor");
+      const destinationActorId = stringValue(atom, "arg6", "destination-actor");
+      const sourceType = enumValue<Actor["type"]>(atom.arguments.arg4, ["CUSTOMER", "MERCHANT", "PAYMENT_PROVIDER", "FINANCING_PROVIDER", "THIRD_PARTY"], "UNKNOWN");
+      const destinationType = enumValue<Actor["type"]>(atom.arguments.arg7, ["CUSTOMER", "MERCHANT", "PAYMENT_PROVIDER", "FINANCING_PROVIDER", "THIRD_PARTY"], "UNKNOWN");
+      const sourceCustody = enumValue<Account["custody"]>(atom.arguments.arg5, ["CUSTOMER", "MERCHANT", "RE", "ESCROW_BANK", "THIRD_PARTY"], "UNKNOWN");
+      const destinationCustody = enumValue<Account["custody"]>(atom.arguments.arg8, ["CUSTOMER", "MERCHANT", "RE", "ESCROW_BANK", "THIRD_PARTY"], "UNKNOWN");
+      const mechanism = enumValue<MoneyEdge["mechanism"]>(atom.arguments.arg2, ["DIRECT_BANK_TRANSFER", "INTERNAL_LEDGER_TRANSFER", "ESCROW", "EXTERNAL_API_ROUTING", "POOL_PASS_THROUGH"], "UNKNOWN");
+      addActor(sourceActorId, sourceType, atom);
+      addActor(destinationActorId, destinationType, atom);
+      addAccount(sourceAccountId, sourceActorId, sourceCustody, atom);
+      addAccount(destinationAccountId, destinationActorId, destinationCustody, atom);
+      merge(edges, {
+        id: `edge:${sourceAccountId}:${destinationAccountId}`,
+        label: "Partner X transfer",
+        sourceAccountId,
+        destinationAccountId,
+        mechanism,
+        ...provenance([atom]),
+      });
+    }
+  }
+
+  const builder = new ActivityGraphBuilder();
+  [...actors.values()].forEach((actor) => builder.addActor(actor));
+  [...accounts.values()].forEach((account) => builder.addAccount(account));
+  [...edges.values()].forEach((edge) => builder.addMoneyEdge(edge));
+  [...obligations.values()].forEach((obligation) => builder.addObligation(obligation));
+  return builder.build(commitSha, label);
+}
+
+function merge<T extends { id: string; evidenceIds: string[]; derivation: Actor["derivation"]; hasUnverifiedEvidence: boolean }>(map: Map<string, T>, next: T): void {
+  const existing = map.get(next.id);
+  if (!existing) { map.set(next.id, next); return; }
+  const evidenceIds = [...new Set([...existing.evidenceIds, ...next.evidenceIds])].sort();
+  const allAi = existing.derivation === "AI_INFERRED" && next.derivation === "AI_INFERRED";
+  const allDeterministic = existing.derivation === "DETERMINISTIC" && next.derivation === "DETERMINISTIC";
+  map.set(next.id, { ...existing, evidenceIds, derivation: allAi ? "AI_INFERRED" : allDeterministic ? "DETERMINISTIC" : "MIXED", hasUnverifiedEvidence: existing.hasUnverifiedEvidence || next.hasUnverifiedEvidence });
+}
+
+function provenance(atoms: EvidenceAtom[]) {
+  const allDeterministic = atoms.every((atom) => atom.derivation === "DETERMINISTIC_ADAPTER");
+  const allAi = atoms.every((atom) => atom.derivation === "AI_INFERRED");
+  return {
+    evidenceIds: atoms.map((atom) => atom.id).sort(),
+    derivation: allDeterministic ? "DETERMINISTIC" as const : allAi ? "AI_INFERRED" as const : "MIXED" as const,
+    hasUnverifiedEvidence: atoms.some((atom) => atom.derivation === "AI_INFERRED" && atom.confidence === "UNCERTAIN"),
+  };
+}
+
+function stringValue(atom: EvidenceAtom, key: string, role: string): string {
+  const value = atom.arguments[key];
+  return value?.type === "LITERAL" && typeof value.value === "string"
+    ? value.value
+    : `unknown:${atom.id}:${role}`;
+}
+function positiveNumber(value: EvidenceAtom["arguments"][string]): number | undefined {
+  return value?.type === "LITERAL" && typeof value.value === "number" && Number.isInteger(value.value) && value.value > 0 ? value.value : undefined;
+}
+function nonNegativeNumber(value: EvidenceAtom["arguments"][string]): number | undefined {
+  return value?.type === "LITERAL" && typeof value.value === "number" && Number.isInteger(value.value) && value.value >= 0 ? value.value : undefined;
+}
+function enumValue<T extends string>(value: EvidenceAtom["arguments"][string], allowed: readonly T[], fallback: T): T {
+  return value?.type === "LITERAL" && typeof value.value === "string" && (allowed as readonly string[]).includes(value.value) ? value.value as T : fallback;
 }
