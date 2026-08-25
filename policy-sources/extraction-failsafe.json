@@ -1,0 +1,15 @@
+{
+  "policyId": "EXTRACTION_FAILSAFE",
+  "name": "Semantic Extraction Fail-Safe Requires Review",
+  "severity": "REVIEW",
+  "sourceDocument": "PROJECT-DEFINED PIPELINE-TRUST RULE — not an RBI clause",
+  "sourceUrl": null,
+  "issuer": "N/A",
+  "referenceNumber": "N/A",
+  "effectiveDate": null,
+  "section": "N/A",
+  "confidenceNote": "This rule is not a financial-topology or regulatory rule. It is the project’s fail-safe implementation of Principle 8: when semantic extraction cannot establish even the shape of a financial fact, the release requires human review rather than silently passing.",
+  "clauseText": "Not applicable — pipeline trust failure, not a quoted regulatory clause.",
+  "observableGraphCondition": "No graph condition. The semantic fallback was unavailable, timed out, or returned schema-invalid output.",
+  "implementationNotes": ["Produces a frozen-shape PolicyViolation with policyId EXTRACTION_FAILSAFE.", "Valid AI_INFERRED/UNCERTAIN evidence is not a failsafe; it remains on the normal graph and policy path."]
+}

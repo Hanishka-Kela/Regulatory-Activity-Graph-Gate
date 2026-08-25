@@ -1,0 +1,10 @@
+{
+  "relevant": true,
+  "symbol": "routePayment",
+  "operation": "ROUTE",
+  "arguments": {
+    "destination": { "type": "REFERENCE", "expression": "paymentConfig.destination" },
+    "payload": { "type": "REFERENCE", "expression": "payload" }
+  },
+  "confidence": "UNCERTAIN"
+}

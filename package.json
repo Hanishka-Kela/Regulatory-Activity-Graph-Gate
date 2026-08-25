@@ -15,6 +15,7 @@
   "dependencies": {
     "@open-policy-agent/opa-wasm": "^1.9.0",
     "commander": "^12.1.0",
+    "openai": "^7.5.0",
     "ts-morph": "^22.0.0",
     "zod": "^3.23.8"
   },
