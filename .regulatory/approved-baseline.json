@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "2",
+  "comment": "Pinned approved baseline artifact. Do NOT regenerate at runtime. Update requires explicit approval action.",
+  "canonicalGraph": {
+    "actors": [
+      {
+        "id": "actor:customer",
+        "label": "End Customer",
+        "type": "CUSTOMER",
+        "derivation": "DETERMINISTIC",
+        "hasUnverifiedEvidence": false,
+        "evidenceIds": [
+          "ev:baseline:001"
+        ]
+      },
+      {
+        "id": "actor:razorpay",
+        "label": "Razorpay Payment Aggregator",
+        "type": "PAYMENT_PROVIDER",
+        "derivation": "DETERMINISTIC",
+        "hasUnverifiedEvidence": false,
+        "evidenceIds": [
+          "ev:baseline:002"
+        ]
+      },
+      {
+        "id": "actor:merchant",
+        "label": "Merchant",
+        "type": "MERCHANT",
+        "derivation": "DETERMINISTIC",
+        "hasUnverifiedEvidence": false,
+        "evidenceIds": [
+          "ev:baseline:003"
+        ]
+      }
+    ],
+    "accounts": [
+      {
+        "id": "acc:customer:wallet",
+        "label": "Customer Payment Source",
+        "ownerActorId": "actor:customer",
+        "custody": "CUSTOMER",
+        "derivation": "DETERMINISTIC",
+        "hasUnverifiedEvidence": false,
+        "evidenceIds": [
+          "ev:baseline:004"
+        ]
+      },
+      {
+        "id": "acc:razorpay:escrow",
+        "label": "Razorpay Escrow/Nodal Account",
+        "ownerActorId": "actor:razorpay",
+        "custody": "ESCROW_BANK",
+        "derivation": "DETERMINISTIC",
+        "hasUnverifiedEvidence": false,
+        "evidenceIds": [
+          "ev:baseline:005"
+        ]
+      },
+      {
+        "id": "acc:merchant:bank",
+        "label": "Merchant Settlement Account",
+        "ownerActorId": "actor:merchant",
+        "custody": "MERCHANT",
+        "derivation": "DETERMINISTIC",
+        "hasUnverifiedEvidence": false,
+        "evidenceIds": [
+          "ev:baseline:006"
+        ]
+      }
+    ],
+    "moneyEdges": [
+      {
+        "id": "edge:cust-to-escrow",
+        "label": "Customer payment into escrow",
+        "sourceAccountId": "acc:customer:wallet",
+        "destinationAccountId": "acc:razorpay:escrow",
+        "mechanism": "ESCROW",
+        "derivation": "DETERMINISTIC",
+        "hasUnverifiedEvidence": false,
+        "evidenceIds": [
+          "ev:baseline:007"
+        ]
+      },
+      {
+        "id": "edge:escrow-to-merchant",
+        "label": "Settlement from escrow to merchant",
+        "sourceAccountId": "acc:razorpay:escrow",
+        "destinationAccountId": "acc:merchant:bank",
+        "mechanism": "DIRECT_BANK_TRANSFER",
+        "settlementDelayDays": 1,
+        "derivation": "DETERMINISTIC",
+        "hasUnverifiedEvidence": false,
+        "evidenceIds": [
+          "ev:baseline:008"
+        ]
+      }
+    ],
+    "obligations": [],
+    "metadata": {
+      "commitSha": "baseline-commit-001",
+      "createdAt": "2026-08-25T14:10:45.698Z",
+      "label": "Approved PA Baseline"
+    },
+    "hash": "c678c7db9d5141f577621a85eb0481bbd977b61763c06852164364c57e8b62ad"
+  },
+  "graphHash": "c678c7db9d5141f577621a85eb0481bbd977b61763c06852164364c57e8b62ad",
+  "sourceCommit": "baseline-commit-001",
+  "approvedAt": "2026-08-23T00:00:00Z",
+  "approvedBy": "compliance-team@razorpay.com"
+}
