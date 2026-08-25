@@ -10,6 +10,7 @@
     "build": "tsc --noEmit",
     "build:policy": "tsx scripts/build-policy.ts",
     "generate:baseline": "tsx scripts/generate-baseline.ts",
+    "cli": "tsx src/cli/index.ts",
     "evaluate": "tsx src/cli/index.ts evaluate",
     "demo:live": "node dist/cli/index.js evaluate --baseline .regulatory/approved-baseline.json --source ./fixtures/case-block"
   },

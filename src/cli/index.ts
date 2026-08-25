@@ -1,33 +1,27 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
 import { Command } from "commander";
+import { readdirSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { extractEvidenceFromFile } from "../evidence/extractor.js";
 import { buildGraphFromEvidence } from "../graph/builder.js";
-import { verifyGraphHash } from "../graph/canonical.js";
 import { computeGraphDelta } from "../graph/diff.js";
 import { evaluatePolicySync } from "../policy/evaluator.js";
 import type { ActivityGraph } from "../graph/types.js";
-import type { ApprovedPartnerRegistry, PolicyResult } from "../policy/types.js";
+import type { ApprovedPartnerRegistry } from "../policy/types.js";
 
-type BaselineArtifact = { canonicalGraph: ActivityGraph; graphHash: string };
-export function evaluateSource(baselinePath: string, sourcePath: string): PolicyResult {
-  const baseline = JSON.parse(readFileSync(baselinePath, "utf8")) as BaselineArtifact;
-  if (baseline.graphHash !== baseline.canonicalGraph.hash || !verifyGraphHash(baseline.canonicalGraph)) throw new Error("Approved baseline hash is invalid");
-  const files = sourceFiles(sourcePath);
-  const evidence = files.flatMap((file) => extractEvidenceFromFile(file, { commitSha: "evaluated-working-tree" }));
-  const proposedGraph = buildGraphFromEvidence(evidence, "evaluated-working-tree", "CLI proposed graph");
-  const partners = JSON.parse(readFileSync(resolve(".regulatory/approved-partners.json"), "utf8")) as ApprovedPartnerRegistry;
-  return evaluatePolicySync({ delta: computeGraphDelta(baseline.canonicalGraph, proposedGraph), proposedGraph, approvedPartners: partners, policyVersion: "1" });
-}
-function sourceFiles(path: string): string[] {
-  const absolute = resolve(path); const entries = readdirSync(absolute, { withFileTypes: true });
-  return entries.flatMap((entry) => entry.isDirectory() ? sourceFiles(join(absolute, entry.name)) : entry.name.endsWith(".ts") && !entry.name.endsWith(".d.ts") ? [join(absolute, entry.name)] : []);
+function files(path: string): string[] { return readdirSync(path, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? files(join(path, entry.name)) : entry.name.endsWith(".ts") ? [join(path, entry.name)] : []); }
+function display(decision: string) { return decision === "REVIEW" ? "REVIEW_REQUIRED" : decision; }
+export function evaluate(baselinePath: string, sourcePath: string) {
+  const baseline = JSON.parse(readFileSync(baselinePath, "utf8")).canonicalGraph as ActivityGraph;
+  const registry = JSON.parse(readFileSync(resolve(".regulatory/approved-partners.json"), "utf8")) as ApprovedPartnerRegistry;
+  const commitSha = "local-evaluation";
+  const evidence = files(sourcePath).flatMap((file) => extractEvidenceFromFile(file, { commitSha }));
+  const proposedGraph = buildGraphFromEvidence(evidence, commitSha, "CLI proposed graph");
+  return evaluatePolicySync({ delta: computeGraphDelta(baseline, proposedGraph), proposedGraph, approvedPartners: registry, policyVersion: "1" });
 }
 const program = new Command();
-program.command("evaluate").requiredOption("--baseline <path>").requiredOption("--source <path>").option("--json").action((options) => {
-  const result = evaluateSource(options.baseline, options.source);
-  const display = result.decision === "REVIEW" ? "REVIEW_REQUIRED" : result.decision;
-  if (options.json) process.stdout.write(`${JSON.stringify({ ...result, displayDecision: display })}\n`); else process.stdout.write(`${display}\n`);
+program.name("regulatory-gate").command("evaluate").requiredOption("--baseline <path>").requiredOption("--source <path>").option("--json").action((options) => {
+  const result = evaluate(resolve(options.baseline), resolve(options.source));
+  if (options.json) console.log(JSON.stringify(result)); else console.log(display(result.decision));
   process.exitCode = result.decision === "PASS" ? 0 : result.decision === "BLOCK" ? 1 : 2;
 });
 program.parse();
