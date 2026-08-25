@@ -108,10 +108,14 @@ function resolvesToExpectedClient(call: CallExpression, adapter: KnownAdapter): 
     .filter((node): node is Node => node !== undefined) ?? [];
 
   return declarations.some((declaration) => {
-    const importDeclaration = declaration.getFirstAncestorByKind(SyntaxKind.ImportDeclaration);
+    const importDeclaration = Node.isImportDeclaration(declaration)
+      ? declaration
+      : declaration.getFirstAncestorByKind(SyntaxKind.ImportDeclaration);
     if (importDeclaration && adapter.modules.includes(importDeclaration.getModuleSpecifierValue())) return true;
 
-    const variable = declaration.getFirstAncestorByKind(SyntaxKind.VariableDeclaration);
+    const variable = Node.isVariableDeclaration(declaration)
+      ? declaration
+      : declaration.getFirstAncestorByKind(SyntaxKind.VariableDeclaration);
     const typeText = variable?.getTypeNode()?.getText();
     return typeText !== undefined && adapter.localTypes.includes(typeText);
   });

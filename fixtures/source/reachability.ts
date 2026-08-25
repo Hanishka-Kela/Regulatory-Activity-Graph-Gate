@@ -8,6 +8,14 @@ function oneHop() {
   return razorpayClient.payments.create("live");
 }
 
+function twoHops() {
+  return razorpayClient.payments.create("too-far");
+}
+
+function intermediate() {
+  return twoHops();
+}
+
 export function handler() {
-  return oneHop();
+  return [oneHop(), intermediate()];
 }

@@ -43,14 +43,30 @@ describe("deterministic evidence extraction", () => {
     });
   });
 
-  it("records unreachable and one-hop reachable calls without suppressing either", () => {
+  it("implements the bounded reachability rule: unreachable false, one hop true, two hops false", () => {
     const atoms = extractEvidenceFromFile(fixture("reachability.ts"), options);
-    expect(atoms).toHaveLength(2);
-    expect(atoms.map((atom) => atom.execution.isReachableFromExportedHandler)).toEqual([false, true]);
+    expect(atoms).toHaveLength(3);
+    expect(atoms.map((atom) => ({
+      argument: atom.arguments.arg0,
+      reachable: atom.execution.isReachableFromExportedHandler,
+    }))).toEqual([
+      { argument: { type: "LITERAL", value: "dead" }, reachable: false },
+      { argument: { type: "LITERAL", value: "live" }, reachable: true },
+      { argument: { type: "LITERAL", value: "too-far" }, reachable: false },
+    ]);
   });
 
   it("does not treat comments, type members, or coincidental local names as SDK evidence", () => {
     expect(extractEvidenceFromFile(fixture("non-adapter.ts"), options)).toEqual([]);
+  });
+
+  it("accepts a locally typed known client after resolving its variable declaration", () => {
+    const atoms = extractEvidenceFromFile(fixture("local-typed-client.ts"), options);
+    expect(atoms).toHaveLength(1);
+    expect(atoms[0]).toMatchObject({
+      symbol: "razorpayClient.payments.create",
+      arguments: { arg0: { type: "LITERAL", value: "locally-typed" } },
+    });
   });
 
   it("is byte-identical when the same source is parsed twice", () => {
