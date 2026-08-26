@@ -9,7 +9,8 @@ import type { PolicyResult } from "../policy/types.js";
 const ValueSchema = z.discriminatedUnion("type", [z.object({ type: z.literal("LITERAL"), value: z.union([z.string(), z.number(), z.boolean(), z.null()]) }), z.object({ type: z.literal("REFERENCE"), expression: z.string() }), z.object({ type: z.literal("UNKNOWN"), expression: z.string() })]);
 const ResponseSchema = z.object({ relevant: z.boolean(), symbol: z.string(), operation: z.string(), arguments: z.record(ValueSchema), confidence: z.enum(["SUPPORTED", "UNCERTAIN"]) }).strict();
 const FINANCIAL_VERBS = /payment|pay|transfer|credit|loan|installment|route/i;
-export type CandidateCall = { file: string; commitSha: string; text: string; symbol: string; span: EvidenceAtom["source"]["span"]; arguments: Record<string, Value>; execution: EvidenceAtom["execution"] };
+const LIVE_REQUEST_TIMEOUT_MS = 15_000;
+export type CandidateCall = { file: string; commitSha: string; text: string; sourceContext: string; symbol: string; span: EvidenceAtom["source"]["span"]; arguments: Record<string, Value>; execution: EvidenceAtom["execution"] };
 export type FallbackOutcome = { atoms: EvidenceAtom[]; failsafe?: { policyId: "EXTRACTION_FAILSAFE"; severity: "REVIEW"; message: string; graphObjects: []; evidenceIds: [] } };
 
 /** Candidate triage reuses Phase 3 output to exclude recognized adapters; verbs only prioritize unmatched AST calls for AI review. */
@@ -20,7 +21,7 @@ export function findSemanticCandidates(file: string, commitSha: string): Candida
     const start = source.getLineAndColumnAtPos(call.getStart()); const end = source.getLineAndColumnAtPos(call.getEnd()); const key = `${start.line}:${start.column}`; const symbol = call.getExpression().getText();
     if (knownStarts.has(key) || !calledSegments(call.getExpression()).some((segment) => FINANCIAL_VERBS.test(segment))) return [];
     const args = Object.fromEntries(call.getArguments().map((arg, i) => [`arg${i}`, value(arg)]));
-    return [{ file, commitSha, text: call.getText(), symbol, span: { startLine: start.line, startColumn: start.column, endLine: end.line, endColumn: end.column }, arguments: args, execution: { isInsideFunction: call.getFirstAncestorByKind(SyntaxKind.FunctionDeclaration) !== undefined || call.getFirstAncestorByKind(SyntaxKind.ArrowFunction) !== undefined, isReachableFromExportedHandler: true, isAwaited: Node.isAwaitExpression(call.getParent()) } }];
+    return [{ file, commitSha, text: call.getText(), sourceContext: source.getFullText(), symbol, span: { startLine: start.line, startColumn: start.column, endLine: end.line, endColumn: end.column }, arguments: args, execution: { isInsideFunction: call.getFirstAncestorByKind(SyntaxKind.FunctionDeclaration) !== undefined || call.getFirstAncestorByKind(SyntaxKind.ArrowFunction) !== undefined, isReachableFromExportedHandler: true, isAwaited: Node.isAwaitExpression(call.getParent()) } }];
   });
 }
 function calledSegments(node: Node): string[] { const segments: string[] = []; let current = node; while (Node.isPropertyAccessExpression(current)) { segments.push(current.getName()); current = current.getExpression(); } if (Node.isIdentifier(current)) segments.push(current.getText()); return segments; }
@@ -36,7 +37,7 @@ export async function extractLiveSemanticCandidate(candidate: CandidateCall, cli
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
       const activeClient = client ?? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const response = await activeClient.models.generateContent({ model: "gemini-3.7-flash", contents: `Classify this candidate financial call. Return JSON only: ${candidate.text}`, config: { responseMimeType: "application/json" } });
+      const response = await withTimeout(activeClient.models.generateContent({ model: "gemini-3.6-flash", contents: `Classify this call using its source context. Return exactly one JSON object with every field: {"relevant":boolean,"symbol":string,"operation":string,"arguments":object,"confidence":"SUPPORTED"|"UNCERTAIN"}. Each arguments value must be {"type":"LITERAL","value":string|number|boolean|null}, {"type":"REFERENCE","expression":string}, or {"type":"UNKNOWN","expression":string}. Never provide a regulatory conclusion. Mark a call relevant:true and confidence:UNCERTAIN when it plausibly routes a payment but its destination is unresolved (for example routePayment(paymentConfig.destination, payload)). Mark relevant:false when source context proves it is a locally defined fake/decoy client rather than a financial SDK. Source context:\n${candidate.sourceContext}\nCandidate call: ${candidate.text}`, config: { responseMimeType: "application/json" } }), LIVE_REQUEST_TIMEOUT_MS);
       return replaySemanticResponse(candidate, JSON.parse(response.text ?? ""));
     } catch (error) {
       if (attempt === 1) return failsafe(`Semantic fallback unavailable after one retry: ${error instanceof Error ? error.message : "unknown error"}`);
@@ -44,6 +45,7 @@ export async function extractLiveSemanticCandidate(candidate: CandidateCall, cli
   }
   return failsafe("Semantic fallback unavailable");
 }
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> { return Promise.race([promise, new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`Semantic fallback timed out after ${timeoutMs}ms`)), timeoutMs))]); }
 export function failsafe(message: string): FallbackOutcome { return { atoms: [], failsafe: { policyId: "EXTRACTION_FAILSAFE", severity: "REVIEW", message, graphObjects: [], evidenceIds: [] } }; }
 /** Applies only extraction-shape failures after normal deterministic policy evaluation. */
 export function applyExtractionFailsafe(result: PolicyResult, outcome: FallbackOutcome): PolicyResult {
