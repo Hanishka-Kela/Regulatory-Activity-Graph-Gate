@@ -1,5 +1,6 @@
 import { Command } from "commander";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync, mkdirSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { join, resolve } from "node:path";
 import { extractEvidenceFromFile } from "../evidence/extractor.js";
 import { applyExtractionFailsafe, extractLiveSemanticCandidate, findSemanticCandidates } from "../evidence/ai-fallback.js";
@@ -22,7 +23,20 @@ export async function evaluate(baselinePath: string, sourcePath: string) {
   const evidence = [...deterministicEvidence, ...outcomes.flatMap((outcome) => outcome.atoms)];
   const proposedGraph = buildGraphFromEvidence(evidence, commitSha, "CLI proposed graph");
   const result = evaluatePolicySync({ delta: computeGraphDelta(baseline, proposedGraph), proposedGraph, approvedPartners: registry, policyVersion: "1" });
-  return outcomes.reduce((current, outcome) => applyExtractionFailsafe(current, outcome), result);
+  const finalResult = outcomes.reduce((current, outcome) => applyExtractionFailsafe(current, outcome), result);
+  writeAudit({ commitSha, baseline, proposedGraph, delta: computeGraphDelta(baseline, proposedGraph), evidence, result: finalResult });
+  return finalResult;
+}
+function writeAudit(data: { commitSha: string; baseline: ActivityGraph; proposedGraph: ActivityGraph; delta: unknown; evidence: unknown; result: ReturnType<typeof evaluatePolicySync> }) {
+  const directory = resolve("audit-output"); mkdirSync(directory, { recursive: true });
+  const write = (name: string, value: unknown) => writeFileSync(join(directory, name), JSON.stringify(value, null, 2));
+  const deltaHash = createHash("sha256").update(JSON.stringify(data.delta)).digest("hex");
+  write("evidence-atoms.json", { commitSha: data.commitSha, evidence: data.evidence });
+  write("graph-baseline.json", { commitSha: data.commitSha, graphHash: data.baseline.hash, graph: data.baseline });
+  write("graph-proposed.json", { commitSha: data.commitSha, graphHash: data.proposedGraph.hash, graph: data.proposedGraph });
+  write("graph-delta.json", { commitSha: data.commitSha, deltaHash, delta: data.delta });
+  write("policy-result.json", { commitSha: data.commitSha, baselineHash: data.baseline.hash, proposedGraphHash: data.proposedGraph.hash, deltaHash, policyResult: data.result });
+  write("release-decision.json", { commitSha: data.commitSha, decision: data.result.decision, policyVersion: data.result.policyVersion, evaluatedAt: data.result.evaluatedAt, violations: data.result.violations });
 }
 const program = new Command();
 program.name("regulatory-gate").command("evaluate").requiredOption("--baseline <path>").requiredOption("--source <path>").option("--json").action(async (options) => {
