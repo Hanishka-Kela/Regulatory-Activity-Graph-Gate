@@ -217,7 +217,7 @@ type Decision = "PASS" | "REVIEW" | "BLOCK";
 | 1 | Graph types, canonicalization, hashing, diff, fixtures, replay tests | ✅ Done (57 tests) |
 | 2 | OPA/Rego policies, TypeScript evaluator, policy tests | ✅ Done (61 tests) |
 | 3 | EvidenceAtom extraction (ts-morph adapters) | ✅ Done (4 tests) |
-| 4 | ActivityGraphBuilder from EvidenceAtoms | ✅ Done (3 tests) |
-| 5 | AI semantic fallback (offline fixture mode) | ⏳ Pending |
-| 6 | CLI + GitHub Action | ⏳ Pending |
-| 7 | Audit artifacts, Docker, demo prep | ⏳ Pending |
+| 4 | ActivityGraphBuilder from EvidenceAtoms | ✅ Done |
+| 5 | AI semantic fallback (offline fixture mode) | ✅ Done |
+| 6 | CLI + GitHub Action | ✅ Done |
+| 7 | Audit artifacts, Docker, demo prep | ✅ Done |
