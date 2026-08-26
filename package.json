@@ -15,9 +15,9 @@
     "demo:live": "node dist/src/cli/index.js evaluate --baseline .regulatory/approved-baseline.json --source ./fixtures/case-block"
   },
   "dependencies": {
+    "@google/genai": "^2.19.0",
     "@open-policy-agent/opa-wasm": "^1.9.0",
     "commander": "^12.1.0",
-    "openai": "^7.5.0",
     "ts-morph": "^22.0.0",
     "zod": "^3.23.8"
   },
