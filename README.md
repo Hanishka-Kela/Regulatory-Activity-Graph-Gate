@@ -206,7 +206,9 @@ type Decision = "PASS" | "REVIEW" | "BLOCK";
 
 4. **Deterministic extraction scope**: Phase 3 recognizes only the three documented SDK call shapes after AST declaration resolution. Unmatched or ambiguous calls deliberately produce no deterministic evidence; they are Phase 5's semantic-fallback boundary.
 
-5. **Phase 4–7 not yet implemented**: Evidence-to-graph construction, AI semantic fallback, CLI, GitHub Action, Docker, and audit artifacts are pending.
+5. **Semantic fallback vocabulary**: Candidate triage covers the four demo cases, not every financial verb. A live OpenAI response has not been exercised in this repository; tests and the default no-key path use recorded replay or fail safely to REVIEW.
+
+6. **Audit output**: Every CLI evaluation writes six JSON side-channel artifacts to ignored `audit-output/`; these files are never read back into the release decision.
 
 ---
 
