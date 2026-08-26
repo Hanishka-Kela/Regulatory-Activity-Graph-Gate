@@ -1,6 +1,8 @@
 # Regulatory Activity Graph Gate
 
-**A release gate that detects when a software change silently alters approved financial activity topology.**
+**A release gate that detects when an engineering change silently alters approved financial activity topology.**
+
+For fintech teams, a harmless-looking code or configuration change can reroute funds, add a lending relationship, or bypass an approved settlement path. This gate turns the evaluated source snapshot into a financial activity graph and blocks or flags material changes before release.
 
 ## The Central Question
 
@@ -15,6 +17,12 @@ Normal Git detects _what source code changed_. This system detects _what financi
 ```bash
 npm install
 npm test
+```
+
+Run a real source evaluation:
+
+```bash
+npm run cli -- evaluate --baseline .regulatory/approved-baseline.json --source fixtures/source/block-flow.ts --json
 ```
 
 No API key. No OPA binary. No network. No database. All tests run offline.
@@ -214,14 +222,7 @@ type Decision = "PASS" | "REVIEW" | "BLOCK";
 
 ---
 
-## Phases
 
-| Phase | Description | Status |
-|-------|-------------|--------|
-| 1 | Graph types, canonicalization, hashing, diff, fixtures, replay tests | ✅ Done (57 tests) |
-| 2 | OPA/Rego policies, TypeScript evaluator, policy tests | ✅ Done (61 tests) |
-| 3 | EvidenceAtom extraction (ts-morph adapters) | ✅ Done (4 tests) |
-| 4 | ActivityGraphBuilder from EvidenceAtoms | ✅ Done |
-| 5 | AI semantic fallback (offline fixture mode) | ✅ Done |
-| 6 | CLI + GitHub Action | ✅ Done |
-| 7 | Audit artifacts, Docker, demo prep | ✅ Done |
+---
+
+For implementation details, policy rationale, canonicalization rules, and known limitations, see [ARCHITECTURE.md](ARCHITECTURE.md).
