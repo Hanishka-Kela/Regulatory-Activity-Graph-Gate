@@ -31,10 +31,11 @@ export function replaySemanticResponse(candidate: CandidateCall, raw: unknown): 
   return { atoms: [{ id, source: { commitSha: candidate.commitSha, file: candidate.file, span: candidate.span }, kind: "EXTERNAL_CALL", symbol: parsed.data.symbol, operation: parsed.data.operation, arguments: parsed.data.arguments, execution: candidate.execution, derivation: "AI_INFERRED", confidence: parsed.data.confidence }] };
 }
 /** Live mode is deliberately one request plus one retry; tests use replaySemanticResponse instead. */
-export async function extractLiveSemanticCandidate(candidate: CandidateCall, client = new OpenAI()): Promise<FallbackOutcome> {
+export async function extractLiveSemanticCandidate(candidate: CandidateCall, client?: OpenAI): Promise<FallbackOutcome> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const response = await client.responses.create({ model: "gpt-5", input: `Classify this candidate financial call. Return JSON only: ${candidate.text}` });
+      const activeClient = client ?? new OpenAI();
+      const response = await activeClient.responses.create({ model: "gpt-5", input: `Classify this candidate financial call. Return JSON only: ${candidate.text}` });
       return replaySemanticResponse(candidate, JSON.parse(response.output_text));
     } catch (error) {
       if (attempt === 1) return failsafe(`Semantic fallback unavailable after one retry: ${error instanceof Error ? error.message : "unknown error"}`);

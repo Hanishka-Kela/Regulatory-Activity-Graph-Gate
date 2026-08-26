@@ -1,0 +1,40 @@
+name: Regulatory Activity Graph Gate
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  evaluate:
+    name: regulatory-gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Evaluate full PR source snapshot
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          set +e
+          npm run cli -- evaluate --baseline .regulatory/approved-baseline.json --source . --json | tee regulatory-gate-result.json
+          code=${PIPESTATUS[0]}
+          if [ "$code" -eq 1 ]; then
+            echo "::error title=Regulatory gate blocked::Financial activity policy BLOCK"
+          elif [ "$code" -eq 2 ]; then
+            echo "::warning title=Regulatory gate review required::Human compliance review required"
+          fi
+          exit "$code"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: regulatory-gate-result
+          path: regulatory-gate-result.json

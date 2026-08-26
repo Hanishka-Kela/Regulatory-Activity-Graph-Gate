@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs"; import { resolve } from "node:path";
-import { applyExtractionFailsafe, findSemanticCandidates, replaySemanticResponse, failsafe } from "../../src/evidence/ai-fallback.js";
+import { applyExtractionFailsafe, extractLiveSemanticCandidate, findSemanticCandidates, replaySemanticResponse, failsafe } from "../../src/evidence/ai-fallback.js";
 import { buildGraphFromEvidence } from "../../src/graph/builder.js";
 import { buildBaselineGraph } from "../../fixtures/baseline.js";
 import { computeGraphDelta } from "../../src/graph/diff.js";
@@ -11,4 +11,5 @@ describe("AI semantic fallback", () => {
   it("surfaces the decoy but recorded replay emits no evidence", () => { const c = findSemanticCandidates(source("non-adapter.ts"), "c"); expect(c).toHaveLength(1); expect(replaySemanticResponse(c[0]!, json("non-adapter.json"))).toEqual({ atoms: [] }); });
   it("schema-invalid replay and extractor failure force the same REVIEW failsafe", () => { expect(replaySemanticResponse(findSemanticCandidates(source("ambiguous-route.ts"), "c")[0]!, { nope: true }).failsafe?.policyId).toBe("EXTRACTION_FAILSAFE"); expect(failsafe("timeout").failsafe?.severity).toBe("REVIEW"); });
   it("overrides an otherwise PASS result with the frozen-shape failsafe violation", () => { const result = applyExtractionFailsafe({ decision: "PASS", violations: [], policyVersion: "t", evaluatedAt: "now" }, failsafe("timeout")); expect(result).toMatchObject({ decision: "REVIEW", violations: [expect.objectContaining({ policyId: "EXTRACTION_FAILSAFE" })] }); });
+  it("converts missing-key client construction into REVIEW failsafe", async () => { const original = process.env.OPENAI_API_KEY; delete process.env.OPENAI_API_KEY; try { const outcome = await extractLiveSemanticCandidate(findSemanticCandidates(source("ambiguous-route.ts"), "c")[0]!); expect(outcome.failsafe?.policyId).toBe("EXTRACTION_FAILSAFE"); } finally { if (original !== undefined) process.env.OPENAI_API_KEY = original; } });
 });
