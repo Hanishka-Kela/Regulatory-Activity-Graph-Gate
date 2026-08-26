@@ -9,7 +9,8 @@ import { evaluatePolicySync } from "../policy/evaluator.js";
 import type { ActivityGraph } from "../graph/types.js";
 import type { ApprovedPartnerRegistry } from "../policy/types.js";
 
-function files(path: string): string[] { if (!statSync(path).isDirectory()) return path.endsWith(".ts") ? [path] : []; return readdirSync(path, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? (["node_modules", ".git", "dist"].includes(entry.name) ? [] : files(join(path, entry.name))) : entry.name.endsWith(".ts") ? [join(path, entry.name)] : []); }
+const EXCLUDED_SOURCE_DIRECTORIES = new Set(["node_modules", ".git", "dist", "fixtures", "tests", "scripts"]);
+function files(path: string): string[] { if (!statSync(path).isDirectory()) return path.endsWith(".ts") ? [path] : []; return readdirSync(path, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? (EXCLUDED_SOURCE_DIRECTORIES.has(entry.name) ? [] : files(join(path, entry.name))) : entry.name.endsWith(".ts") ? [join(path, entry.name)] : []); }
 function display(decision: string) { return decision === "REVIEW" ? "REVIEW_REQUIRED" : decision; }
 export async function evaluate(baselinePath: string, sourcePath: string) {
   const baseline = JSON.parse(readFileSync(baselinePath, "utf8")).canonicalGraph as ActivityGraph;

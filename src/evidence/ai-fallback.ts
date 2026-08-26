@@ -18,11 +18,12 @@ export function findSemanticCandidates(file: string, commitSha: string): Candida
   const project = new Project({ tsConfigFilePath: undefined, skipAddingFilesFromTsConfig: true }); const source = project.addSourceFileAtPath(file);
   return source.getDescendantsOfKind(SyntaxKind.CallExpression).flatMap((call) => {
     const start = source.getLineAndColumnAtPos(call.getStart()); const end = source.getLineAndColumnAtPos(call.getEnd()); const key = `${start.line}:${start.column}`; const symbol = call.getExpression().getText();
-    if (knownStarts.has(key) || !FINANCIAL_VERBS.test(symbol)) return [];
+    if (knownStarts.has(key) || !calledSegments(call.getExpression()).some((segment) => FINANCIAL_VERBS.test(segment))) return [];
     const args = Object.fromEntries(call.getArguments().map((arg, i) => [`arg${i}`, value(arg)]));
     return [{ file, commitSha, text: call.getText(), symbol, span: { startLine: start.line, startColumn: start.column, endLine: end.line, endColumn: end.column }, arguments: args, execution: { isInsideFunction: call.getFirstAncestorByKind(SyntaxKind.FunctionDeclaration) !== undefined || call.getFirstAncestorByKind(SyntaxKind.ArrowFunction) !== undefined, isReachableFromExportedHandler: true, isAwaited: Node.isAwaitExpression(call.getParent()) } }];
   });
 }
+function calledSegments(node: Node): string[] { const segments: string[] = []; let current = node; while (Node.isPropertyAccessExpression(current)) { segments.push(current.getName()); current = current.getExpression(); } if (Node.isIdentifier(current)) segments.push(current.getText()); return segments; }
 export function replaySemanticResponse(candidate: CandidateCall, raw: unknown): FallbackOutcome {
   const parsed = ResponseSchema.safeParse(raw);
   if (!parsed.success) return failsafe("Semantic fallback returned schema-invalid output");
