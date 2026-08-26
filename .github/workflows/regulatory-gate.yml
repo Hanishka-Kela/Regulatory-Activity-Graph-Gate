@@ -22,7 +22,7 @@ jobs:
       - run: npm ci
       - name: Evaluate full PR source snapshot
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set +e
           npm run cli -- evaluate --baseline .regulatory/approved-baseline.json --source . --json | tee regulatory-gate-result.json

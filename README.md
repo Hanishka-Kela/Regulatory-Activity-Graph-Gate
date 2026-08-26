@@ -19,6 +19,8 @@ npm test
 
 No API key. No OPA binary. No network. No database. All tests run offline.
 
+> Buildathon deviation: the live semantic fallback uses Gemini (`GEMINI_API_KEY`) rather than the originally specified OpenAI provider for cost reasons. Offline tests never call either provider; validated evidence, graph construction, and policy evaluation remain provider-independent.
+
 ---
 
 ## Repository Structure

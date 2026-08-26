@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import { Node, Project, SyntaxKind } from "ts-morph";
 import { extractEvidenceFromFile } from "./extractor.js";
@@ -31,13 +31,13 @@ export function replaySemanticResponse(candidate: CandidateCall, raw: unknown): 
   const id = createHash("sha256").update(JSON.stringify([candidate.commitSha, candidate.file, candidate.span, parsed.data.symbol]), "utf8").digest("hex");
   return { atoms: [{ id, source: { commitSha: candidate.commitSha, file: candidate.file, span: candidate.span }, kind: "EXTERNAL_CALL", symbol: parsed.data.symbol, operation: parsed.data.operation, arguments: parsed.data.arguments, execution: candidate.execution, derivation: "AI_INFERRED", confidence: parsed.data.confidence }] };
 }
-/** Live mode is deliberately one request plus one retry; tests use replaySemanticResponse instead. */
-export async function extractLiveSemanticCandidate(candidate: CandidateCall, client?: OpenAI): Promise<FallbackOutcome> {
+/** Buildathon deviation: Gemini replaces the frozen OpenAI provider for cost reasons; tests use replaySemanticResponse. */
+export async function extractLiveSemanticCandidate(candidate: CandidateCall, client?: GoogleGenAI): Promise<FallbackOutcome> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const activeClient = client ?? new OpenAI();
-      const response = await activeClient.responses.create({ model: "gpt-5", input: `Classify this candidate financial call. Return JSON only: ${candidate.text}` });
-      return replaySemanticResponse(candidate, JSON.parse(response.output_text));
+      const activeClient = client ?? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await activeClient.models.generateContent({ model: "gemini-3.7-flash", contents: `Classify this candidate financial call. Return JSON only: ${candidate.text}`, config: { responseMimeType: "application/json" } });
+      return replaySemanticResponse(candidate, JSON.parse(response.text ?? ""));
     } catch (error) {
       if (attempt === 1) return failsafe(`Semantic fallback unavailable after one retry: ${error instanceof Error ? error.message : "unknown error"}`);
     }
