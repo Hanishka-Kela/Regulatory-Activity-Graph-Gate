@@ -12,7 +12,7 @@
     "generate:baseline": "tsx scripts/generate-baseline.ts",
     "cli": "tsx src/cli/index.ts",
     "evaluate": "tsx src/cli/index.ts evaluate",
-    "demo:live": "node dist/src/cli/index.js evaluate --baseline .regulatory/approved-baseline.json --source ./fixtures/case-block"
+    "demo:live": "tsx src/cli/index.ts evaluate --baseline .regulatory/approved-baseline.json --source ./fixtures/source/block-flow.ts --json"
   },
   "dependencies": {
     "@google/genai": "^2.19.0",
