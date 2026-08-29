@@ -1,16 +1,14 @@
 # Regulatory Activity Graph Gate
 
-**A release gate that detects when an engineering change silently alters approved financial activity topology.**
+Regulatory Activity Graph Gate is a release check for changes that alter approved financial activity. It reads source code, builds a financial activity graph, and compares that graph with an approved baseline before release.
 
-For fintech teams, a harmless-looking code or configuration change can reroute funds, add a lending relationship, or bypass an approved settlement path. This gate turns the evaluated source snapshot into a financial activity graph and blocks or flags material changes before release.
+## What it checks
 
-## The Central Question
+Source changes can affect fund routing, lending relationships, and settlement paths even when the code diff looks small. Git shows the source change; this project checks whether the resulting financial activity topology has changed.
 
-> Did this engineering change materially change the financial activity topology that was previously approved?
+## How it works
 
-Normal Git detects _what source code changed_. This system detects _what financial behaviour changed because of that source-code change_.
-
----
+The project extracts evidence from TypeScript source, builds a graph of the observed activity, calculates the graph delta against the baseline, and evaluates the configured policies. The CLI returns `PASS`, `REVIEW`, or `BLOCK` and writes audit artifacts for the evaluation.
 
 ## Quickstart
 
@@ -19,19 +17,17 @@ npm install
 npm test
 ```
 
-Run a real source evaluation:
+Run a source evaluation:
 
 ```bash
 npm run cli -- evaluate --baseline .regulatory/approved-baseline.json --source fixtures/source/block-flow.ts --json
 ```
 
-No API key. No OPA binary. No network. No database. All tests run offline.
+The test suite does not need an API key, OPA binary, network access, or database. All tests run offline.
 
-> Buildathon deviation: the live semantic fallback uses Gemini (`GEMINI_API_KEY`) rather than the originally specified OpenAI provider for cost reasons. It pins `gemini-3.6-flash`, selected for current account availability and lower contention than Gemini 3.7 Flash on this single-shot extraction task. Live validation confirmed the unresolved routing case reaches normal `UNCERTAIN-EVIDENCE` REVIEW while the locally defined decoy client remains PASS. Offline tests never call either provider; validated evidence, graph construction, and policy evaluation remain provider-independent.
+The live semantic fallback uses Gemini with `GEMINI_API_KEY` instead of the originally specified OpenAI provider. This was a buildathon cost decision. It uses `gemini-3.6-flash`, chosen because it was available on the current account and less contended than Gemini 3.7 Flash for this single-call extraction step. A live check confirmed that unresolved routing reaches `UNCERTAIN-EVIDENCE` and returns `REVIEW`, while the locally defined decoy client returns `PASS`. Offline tests do not call either provider; evidence validation, graph construction, and policy evaluation do not depend on the provider.
 
----
-
-## Demo Cases
+## Demo cases
 
 | Case | Scenario | Decision |
 |------|----------|----------|
@@ -40,9 +36,7 @@ No API key. No OPA binary. No network. No database. All tests run offline.
 | 3 | Pool/treasury account replaces escrow | `BLOCK` |
 | 4 | `routePayment(paymentConfig.destination, payload)` — uncertain AI | `REVIEW` |
 
----
-
-## Implemented Policies
+## Policies
 
 | ID | Rule | Severity | Source |
 |----|------|----------|--------|
@@ -51,18 +45,20 @@ No API key. No OPA binary. No network. No database. All tests run offline.
 | DL-02 | `FINANCING_PROVIDER` actor not in approved-partners registry | **BLOCK** | Para 17–derived internal governance control *(not a direct CIMS-compliance test; see `policy-sources/dl-02.json`)* |
 | DL-03 | New `Obligation` appears in delta (new lending relationship) | **REVIEW** | Project-defined safety-net rule, not a specific RBI clause — see `policy-sources/dl-03.json` |
 
-DL-01 and DL-02 were originally cited against the September 2022 Guidelines on Digital Lending. That document was consolidated and replaced by the RBI (Digital Lending) Directions, 2025 (effective May 8, 2025). Para 9 addresses direct loan disbursal and repayment, while Para 17 requires reporting deployed DLAs to RBI's CIMS portal. DL-02 is intentionally an internal pre-release control derived from the latter obligation; it does not claim to prove CIMS compliance. RBI's primary page blocks automated retrieval, so re-check the primary notice before quoting a paragraph in external submission material.
+Each policy has source metadata in `policy-sources/`.
 
-Each policy has a corresponding source metadata file in `policy-sources/`.
+## Project structure
 
----
+- `src/graph/` contains the financial topology model, canonical hashes, and deltas.
+- `src/policy/` contains deterministic policy evaluation.
+- `src/evidence/` contains AST extraction and the semantic fallback.
+- `src/cli/` contains the release command and audit artifact output.
+- `fixtures/` and `policy-sources/` contain demo inputs and policy rationale.
 
-## Architecture at a glance
+## Regulatory-source note
 
-- `src/graph/` — financial topology, canonical hashes, and deltas.
-- `src/policy/` — deterministic policy evaluation.
-- `src/evidence/` — AST extraction and semantic fallback.
-- `src/cli/` — release command and audit artifacts.
-- `fixtures/` and `policy-sources/` — demo inputs and policy rationale.
+DL-01 and DL-02 were originally cited against the September 2022 Guidelines on Digital Lending. That document was consolidated and replaced by the RBI (Digital Lending) Directions, 2025, effective May 8, 2025. Para 9 addresses direct loan disbursal and repayment. Para 17 requires reporting deployed DLAs to RBI's CIMS portal.
+
+DL-02 is an internal pre-release control derived from the record-keeping and certification obligation in Para 17. It does not claim to prove CIMS compliance. RBI's primary page blocks automated retrieval, so the primary notice should be checked before quoting a paragraph in external submission material.
 
 For implementation details, policy rationale, canonicalization rules, baseline governance, and known limitations, see [ARCHITECTURE.md](ARCHITECTURE.md).
