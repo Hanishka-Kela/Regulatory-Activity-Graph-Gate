@@ -1,14 +1,21 @@
 # Regulatory Activity Graph Gate
 
-Regulatory Activity Graph Gate is a release check for changes that alter approved financial activity. It reads source code, builds a financial activity graph, and compares that graph with an approved baseline before release.
+Regulatory Activity Graph Gate checks whether a TypeScript change changes approved financial activity before it is released. It extracts evidence from source code, models the related money movement and lending activity as a graph, then compares it with an approved baseline.
 
-## What it checks
+The CLI returns `PASS`, `REVIEW`, or `BLOCK` and writes the evaluation artifacts needed to inspect the result.
 
-Source changes can affect fund routing, lending relationships, and settlement paths even when the code diff looks small. Git shows the source change; this project checks whether the resulting financial activity topology has changed.
+## Problem
+
+A small code or configuration change can change where funds move, add a financing partner, create a lending relationship, or bypass an expected settlement path. A normal source diff does not show those effects directly. This project evaluates the financial activity represented by the code change instead.
 
 ## How it works
 
-The project extracts evidence from TypeScript source, builds a graph of the observed activity, calculates the graph delta against the baseline, and evaluates the configured policies. The CLI returns `PASS`, `REVIEW`, or `BLOCK` and writes audit artifacts for the evaluation.
+1. The extractor reads TypeScript source and identifies supported financial SDK calls.
+2. Gemini classifies financially relevant calls that cannot be resolved by the deterministic extractor.
+3. The extracted evidence is converted into a financial activity graph.
+4. The proposed graph is compared with the approved baseline.
+5. Policy rules evaluate the graph delta and proposed graph.
+6. The CLI returns `PASS`, `REVIEW`, or `BLOCK` and produces audit artifacts.
 
 ## Quickstart
 
@@ -23,9 +30,7 @@ Run a source evaluation:
 npm run cli -- evaluate --baseline .regulatory/approved-baseline.json --source fixtures/source/block-flow.ts --json
 ```
 
-The test suite does not need an API key, OPA binary, network access, or database. All tests run offline.
-
-The live semantic fallback uses Gemini with `GEMINI_API_KEY` instead of the originally specified OpenAI provider. This was a buildathon cost decision. It uses `gemini-3.6-flash`, chosen because it was available on the current account and less contended than Gemini 3.7 Flash for this single-call extraction step. A live check confirmed that unresolved routing reaches `UNCERTAIN-EVIDENCE` and returns `REVIEW`, while the locally defined decoy client returns `PASS`. Offline tests do not call either provider; evidence validation, graph construction, and policy evaluation do not depend on the provider.
+Tests run offline and do not require an API key, OPA binary, network access, or a database. Gemini is only used by the live semantic fallback through `GEMINI_API_KEY`.
 
 ## Demo cases
 
@@ -45,20 +50,22 @@ The live semantic fallback uses Gemini with `GEMINI_API_KEY` instead of the orig
 | DL-02 | `FINANCING_PROVIDER` actor not in approved-partners registry | **BLOCK** | Para 17–derived internal governance control *(not a direct CIMS-compliance test; see `policy-sources/dl-02.json`)* |
 | DL-03 | New `Obligation` appears in delta (new lending relationship) | **REVIEW** | Project-defined safety-net rule, not a specific RBI clause — see `policy-sources/dl-03.json` |
 
-Each policy has source metadata in `policy-sources/`.
+Policy metadata is stored in `policy-sources/`. Paragraph references should be verified against the primary RBI publication before being quoted externally.
 
 ## Project structure
 
-- `src/graph/` contains the financial topology model, canonical hashes, and deltas.
-- `src/policy/` contains deterministic policy evaluation.
-- `src/evidence/` contains AST extraction and the semantic fallback.
-- `src/cli/` contains the release command and audit artifact output.
-- `fixtures/` and `policy-sources/` contain demo inputs and policy rationale.
+- `src/graph/` — financial activity types, canonical hashes, graph construction, and deltas.
+- `src/policy/` — policy evaluation and approved-partner checks.
+- `src/evidence/` — TypeScript AST extraction and the Gemini semantic fallback.
+- `src/cli/` — CLI evaluation command and audit artifact output.
+- `fixtures/` — source files and graph fixtures used by the demo cases and tests.
+- `policy-sources/` — policy rationale and regulatory-source metadata.
 
-## Regulatory-source note
+## Limitations
 
-DL-01 and DL-02 were originally cited against the September 2022 Guidelines on Digital Lending. That document was consolidated and replaced by the RBI (Digital Lending) Directions, 2025, effective May 8, 2025. Para 9 addresses direct loan disbursal and repayment. Para 17 requires reporting deployed DLAs to RBI's CIMS portal.
+- The deterministic extractor supports a limited set of SDK call patterns.
+- Candidate detection for the semantic fallback uses a limited financial vocabulary.
+- AI-classified calls can produce `REVIEW` when the financial activity cannot be resolved safely.
+- Regulatory paragraph references should be checked against the primary RBI publication before external use.
 
-DL-02 is an internal pre-release control derived from the record-keeping and certification obligation in Para 17. It does not claim to prove CIMS compliance. RBI's primary page blocks automated retrieval, so the primary notice should be checked before quoting a paragraph in external submission material.
-
-For implementation details, policy rationale, canonicalization rules, baseline governance, and known limitations, see [ARCHITECTURE.md](ARCHITECTURE.md).
+See [ARCHITECTURE.md](ARCHITECTURE.md) for implementation details, policy rationale, canonicalization rules, baseline governance, and additional limitations.
