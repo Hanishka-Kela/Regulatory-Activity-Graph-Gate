@@ -2,9 +2,7 @@
  * Phase 2 tests: DL-01 policy
  *
  * DL-01: Prohibited pool/pass-through account pattern
- * Source: RBI (Digital Lending) Directions, 2025, Para 9 (moderate confidence — see
- *   policy-sources/dl-01.json). Consolidates and replaces the September 2022
- *   Guidelines on Digital Lending's Para 3 equivalent provision.
+ * Source: RBI (Digital Lending) Directions, 2025, Paragraph 9.
  *
  * Tests:
  * - PASS: no POOL_PASS_THROUGH edges
@@ -22,6 +20,16 @@ import { passGraph } from "../../fixtures/case-pass.js";
 import type { ActivityGraph } from "../../src/graph/types.js";
 
 describe("DL-01 — PASS cases", () => {
+  it("POOL_PASS_THROUGH outside lending context does not trigger", () => {
+    const nonLendingGraph: ActivityGraph = {
+      ...baselineGraph,
+      moneyEdges: baselineGraph.moneyEdges.map((edge, index) =>
+        index === 0 ? { ...edge, mechanism: "POOL_PASS_THROUGH" as const } : edge,
+      ),
+    };
+    expect(evaluateDL01(nonLendingGraph)).toHaveLength(0);
+  });
+
   it("baseline (ESCROW + DIRECT_BANK_TRANSFER): no violations", () => {
     const violations = evaluateDL01(baselineGraph);
     expect(violations).toHaveLength(0);
@@ -57,7 +65,7 @@ describe("DL-01 — BLOCK cases", () => {
   it("violation references the POOL_PASS_THROUGH edge", () => {
     const violations = evaluateDL01(blockGraph);
     const graphObj = violations[0].graphObjects.find(
-      (o) => o.id === "edge:cust-to-pool",
+      (o) => o.id === "edge:lender-to-pool",
     );
     expect(graphObj).toBeDefined();
   });
@@ -65,16 +73,17 @@ describe("DL-01 — BLOCK cases", () => {
   it("violation message cites the current RBI (Digital Lending) Directions, 2025, Para 9", () => {
     const violations = evaluateDL01(blockGraph);
     expect(violations[0].message).toContain("Digital Lending) Directions, 2025");
-    expect(violations[0].message).toContain("Para 9");
+    expect(violations[0].message).toContain("Paragraph 9");
+    expect(violations[0].message).toContain("does not by itself establish a legal violation");
   });
 });
 
 describe("DL-01 — mechanism variants", () => {
   function graphWithMechanism(mechanism: string): ActivityGraph {
     return {
-      ...baselineGraph,
-      moneyEdges: baselineGraph.moneyEdges.map((e) =>
-        e.id === "edge:cust-to-escrow"
+      ...blockGraph,
+      moneyEdges: blockGraph.moneyEdges.map((e) =>
+        e.id === "edge:lender-to-pool"
           ? { ...e, mechanism: mechanism as any }
           : e,
       ),

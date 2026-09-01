@@ -4,24 +4,8 @@
 # Severity:  REVIEW
 #
 # Status: PROJECT-DEFINED SAFETY-NET RULE, not a specific numbered RBI clause.
-#   An earlier draft of this file cited "Para 2 (Definitions) + Para 5
-#   (Compliance)" of the 2022 Guidelines — that citation could not be
-#   corroborated by any source during citation verification and has been
-#   removed rather than left in place looking more authoritative than it is.
-#   Per the project's own principle ("do not implement a rule that cannot be
-#   confidently mapped to a primary source"), this rule is instead justified
-#   directly: it is REVIEW severity, not BLOCK, so the cost of being
-#   conservative here is a human review step, not a false BLOCK — consistent
-#   with Principle 8 (if the system cannot safely determine the financial
-#   state, REVIEW is safer than PASS).
-#
-# Rationale: RBI's digital lending framework (both the superseded 2022
-# Guidelines and the current 2025 Directions) treats new lending arrangements
-# generally as requiring compliance oversight before going live — see DL-01
-# and DL-02's citations for the specific, corroborated provisions this general
-# posture is built on. DL-03 applies that same posture at the point a new
-# Obligation appears in the graph, independent of whether the specific
-# provisions DL-01/DL-02 check are also triggered.
+# It sends new lending obligations for human review and makes no independent
+# regulatory-compliance determination.
 #
 # What this rule detects:
 #   Any Obligation present in the DELTA (addedObligations) that represents a

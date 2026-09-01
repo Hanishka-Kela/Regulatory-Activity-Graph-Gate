@@ -24,8 +24,10 @@ describe("ActivityGraphBuilder evidence path", () => {
     const graph = build("block-flow.ts");
     expect(graph.moneyEdges.map((edge) => edge.mechanism)).toEqual(["POOL_PASS_THROUGH", "DIRECT_BANK_TRANSFER"]);
     expect(graph.accounts.find((account) => account.id === "acc:treasury:pool")).toMatchObject({ custody: "THIRD_PARTY", ownerActorId: "actor:treasury" });
+    expect(graph.obligations).toMatchObject([{ debtorActorId: "actor:borrower", creditorActorId: "actor:partner_x" }]);
     expect(result(graph).decision).toBe("BLOCK");
     expect(result(graph).violations).toEqual(expect.arrayContaining([expect.objectContaining({ policyId: "DL-01", severity: "BLOCK" })]));
+    expect(result(graph).violations.some((violation) => violation.policyId === "PA-01")).toBe(false);
   });
 
   it("propagates AI uncertainty deterministically to every contributing graph object", () => {

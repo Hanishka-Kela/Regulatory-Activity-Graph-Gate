@@ -82,23 +82,18 @@ describe("CASE 2 — REVIEW: new actor, account, edge, obligation", () => {
   });
 });
 
-describe("CASE 3 — BLOCK: pass-through pool replaces escrow", () => {
+describe("CASE 3 — BLOCK: loan disbursal through a third-party pool", () => {
   it("ΔG is NOT empty", () => {
     const delta = computeGraphDelta(baselineGraph, blockGraph);
     expect(isDeltaEmpty(delta)).toBe(false);
   });
 
-  it("detects treasury actor as added", () => {
+  it("detects lending and treasury actors as added", () => {
     const delta = computeGraphDelta(baselineGraph, blockGraph);
-    expect(delta.addedActors).toHaveLength(1);
-    expect(delta.addedActors[0].id).toBe("actor:treasury");
-    expect(delta.addedActors[0].type).toBe("THIRD_PARTY");
-  });
-
-  it("detects razorpay escrow account as removed", () => {
-    const delta = computeGraphDelta(baselineGraph, blockGraph);
-    const removedIds = delta.removedAccounts.map((a) => a.id);
-    expect(removedIds).toContain("acc:razorpay:escrow");
+    expect(delta.addedActors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "actor:partner_x", type: "FINANCING_PROVIDER" }),
+      expect.objectContaining({ id: "actor:treasury", type: "THIRD_PARTY" }),
+    ]));
   });
 
   it("detects treasury pool account as added", () => {
@@ -115,15 +110,11 @@ describe("CASE 3 — BLOCK: pass-through pool replaces escrow", () => {
     expect(poolEdge).toBeDefined();
   });
 
-  it("detects original escrow edge as removed", () => {
+  it("detects the lending obligation as added", () => {
     const delta = computeGraphDelta(baselineGraph, blockGraph);
-    // Original edge: acc:customer:wallet → acc:razorpay:escrow
-    const removedEdge = delta.removedMoneyEdges.find(
-      (e) =>
-        e.sourceAccountId === "acc:customer:wallet" &&
-        e.destinationAccountId === "acc:razorpay:escrow",
-    );
-    expect(removedEdge).toBeDefined();
+    expect(delta.addedObligations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ debtorActorId: "actor:borrower", creditorActorId: "actor:partner_x" }),
+    ]));
   });
 });
 

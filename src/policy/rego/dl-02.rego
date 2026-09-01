@@ -3,33 +3,19 @@
 # Policy ID: DL-02
 # Severity:  BLOCK
 #
-# Source: RBI (Digital Lending) Directions, 2025, Para 17 (STRONG CONFIDENCE —
-#         three independent secondary sources converge on this paragraph number).
-#         Consolidates and replaces the September 2, 2022 Guidelines' Para 8
-#         "board-approved list" requirement with a different mechanism: REs
-#         must report all deployed Digital Lending Apps (DLAs) — their own and
-#         their LSPs' — to RBI's Centralised Information Management System
-#         (CIMS) portal, keep that list current, and have the Chief Compliance
-#         Officer or a board-designated official certify its accuracy.
+# Source context: RBI (Digital Lending) Directions, 2025, Paragraph 17.
 # Document: "Reserve Bank of India (Digital Lending) Directions, 2025"
-# URL: https://www.rbi.org.in/Scripts/NotificationUser.aspx (primary PDF is
-#   CAPTCHA-gated; could not be fetched directly during this research pass)
-# Clause: Para 17 — CIMS reporting requirement, effective 2025-06-15 per RBI's
-#   published portal-operational timeline.
-# Effective: 2025-06-15
+# Reference: RBI/2025-26/36; DOR.STR.REC.19/21.07.001/2025-26.
+# URL: https://www.rbi.org.in/scripts/NotificationUser.aspx?Id=12848&Mode=0
+# Effective: 2025-05-08
 #
 # What this rule detects:
 #   A lending-related actor (FINANCING_PROVIDER) appearing in the proposed
 #   graph whose actorId is NOT present in the approved-partners registry.
 #
-#   IMPORTANT: this check does NOT verify that CIMS reporting has occurred,
-#   and it is NOT a legal RE-LSP contract verification. It is a structural
-#   internal-governance gate: correctly certifying DLA/LSP data to RBI's CIMS
-#   portal requires the RE to maintain an accurate internal record of active
-#   financing partners in the first place. This rule enforces that a new
-#   financing actor is tracked in that internal record (approved-partners.json)
-#   before it reaches production — a necessary precondition for correct CIMS
-#   certification, not a replication of the CIMS mechanism itself.
+#   This is a project-defined internal governance control derived from the need
+#   to track financing providers and maintain accurate regulatory reporting. It
+#   does not directly implement Paragraph 17 or prove CIMS compliance.
 #
 #   Note: checks ALL FINANCING_PROVIDER actors in the full proposedGraph,
 #   not just those in the delta. This catches actors that were silently
@@ -58,7 +44,7 @@ violations contains v if {
         "policyId": "DL-02",
         "severity": "BLOCK",
         "message": sprintf(
-            "Financing provider actor '%v' (%v) is not present in the approved-partners registry. RBI (Digital Lending) Directions, 2025, Para 17 requires REs to maintain an accurate internal record of DLAs/LSPs before certifying them via the CIMS portal — this actor must be added to .regulatory/approved-partners.json before merging.",
+            "Financing provider actor '%v' (%v) is not present in the approved-partners registry. Project-defined internal governance control DL-02, derived from the reporting context in RBI (Digital Lending) Directions, 2025, Paragraph 17, requires review before merging. It does not prove CIMS compliance.",
             [actor.id, actor.label]
         ),
         "graphObjects": [{"id": actor.id, "label": actor.label}],

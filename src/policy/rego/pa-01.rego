@@ -3,15 +3,13 @@
 # Policy ID: PA-01
 # Severity:  REVIEW
 #
-# Source: Reserve Bank of India — Master Direction on Regulation of Payment
-#         Aggregators (PA), RBI/DPSS/2025-26/141, dated September 15, 2025.
-# URL: https://www.rbi.org.in/Scripts/NotificationUser.aspx (RBI/DPSS/2025-26/141)
-# Clause: Para on Escrow Account maintenance — Non-bank PAs must maintain a
-#   dedicated escrow account with a Scheduled Commercial Bank to hold customer
-#   funds. Permissible debits are restricted to: settlement to merchants,
-#   refunds for failed/disputed transactions, and pre-determined commissions.
-#   Funds must not flow from the PA to merchants without passing through the
-#   designated escrow/nodal account.
+# Source: RBI (Regulation of Payment Aggregators) Directions, 2025.
+# Reference: RBI/DPSS/2025-26/141;
+#   CO.DPSS.POLC.No.S-633/02-14-008/2025-26, dated September 15, 2025.
+# URL: https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12896
+# Clause: Chapter V, Paragraphs 16–18. A non-bank PA maintains merchant funds
+#   in a separate escrow account with a Scheduled Commercial Bank in India.
+#   Credits and debits follow all permitted categories listed in the Direction.
 # Effective: 2025-09-15
 #
 # Demo scenario scope: PA-Online (domestic, INR). The check verifies that:
@@ -26,8 +24,8 @@
 #     - There is NO intervening ESCROW_BANK account between customer and merchant
 #
 # Implementation note: The check looks for a MERCHANT-destined edge that does NOT
-# originate from an ESCROW_BANK account. This catches the prohibited pattern of
-# direct PA-to-merchant routing without proper escrow intermediation.
+# originate from an ESCROW_BANK account. This catches direct
+# non-escrow-to-merchant topology for review.
 # This is a REVIEW (not BLOCK) because the system may not have full graph context
 # to determine whether a separate escrow path already exists elsewhere in the flow.
 
@@ -57,7 +55,7 @@ violations contains v if {
         "policyId": "PA-01",
         "severity": "REVIEW",
         "message": sprintf(
-            "Payment flow edge '%v' routes funds directly to merchant account '%v' without passing through a designated ESCROW_BANK account. RBI PA Master Direction 2025 (RBI/DPSS/2025-26/141) requires PA funds to flow through a dedicated escrow/nodal account before merchant settlement.",
+            "Payment flow edge '%v' routes funds directly to merchant account '%v' without passing through a designated ESCROW_BANK account. Configured prototype policy PA-01 flags this as a REVIEW heuristic under RBI (Regulation of Payment Aggregators) Directions, 2025, Chapter V, Paragraphs 16–18. The graph may not contain the full payment flow, so this result does not establish a legal violation.",
             [edge.id, edge.destinationAccountId]
         ),
         "graphObjects": [

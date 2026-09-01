@@ -2,11 +2,9 @@
  * Phase 2 tests: DL-02 policy
  *
  * DL-02: Approved partner structural check
- * Source: RBI (Digital Lending) Directions, 2025, Para 17 (strong confidence — see
- *   policy-sources/dl-02.json). This is a mechanism change from the superseded
- *   September 2022 Guidelines' Para 8 "board-approved list" — the 2025 Directions
- *   instead require CIMS-portal reporting with CCO-certified accuracy. This check
- *   enforces the internal-record precondition for correct CIMS certification.
+ * DL-02 is a project-defined internal governance control derived from the need
+ * to track financing providers and maintain accurate regulatory reporting. It
+ * does not directly implement Paragraph 17 or prove CIMS compliance.
  *
  * Tests:
  * - PASS: FINANCING_PROVIDER actor IS in approved registry
@@ -71,9 +69,8 @@ describe("DL-02 — PASS: approved FINANCING_PROVIDER", () => {
     expect(violations).toHaveLength(0);
   });
 
-  it("block graph (THIRD_PARTY actor, not FINANCING_PROVIDER): no DL-02 violations", () => {
-    // blockGraph has actor:treasury (THIRD_PARTY) — DL-02 only checks FINANCING_PROVIDER
-    const violations = evaluateDL02(blockGraph, emptyRegistry);
+  it("block graph with approved Partner X: no DL-02 violations", () => {
+    const violations = evaluateDL02(blockGraph, registryWithPartnerX);
     expect(violations).toHaveLength(0);
   });
 });
@@ -106,15 +103,16 @@ describe("DL-02 — BLOCK: unapproved FINANCING_PROVIDER", () => {
     expect(violations[0].graphObjects[0].id).toBe("actor:partner_x");
   });
 
-  it("violation message cites the current RBI (Digital Lending) Directions, 2025, Para 17 (CIMS reporting)", () => {
+  it("message identifies the Paragraph 17 reporting context without claiming CIMS compliance", () => {
     const violations = evaluateDL02(reviewGraph, emptyRegistry);
     expect(violations[0].message).toContain("Digital Lending) Directions, 2025");
-    expect(violations[0].message).toContain("Para 17");
+    expect(violations[0].message).toContain("Paragraph 17");
+    expect(violations[0].message).toContain("does not prove CIMS compliance");
   });
 
-  it("violation message mentions approved-partners.json", () => {
+  it("violation message identifies the approved-partners registry", () => {
     const violations = evaluateDL02(reviewGraph, emptyRegistry);
-    expect(violations[0].message).toContain("approved-partners.json");
+    expect(violations[0].message).toContain("approved-partners registry");
   });
 });
 
@@ -160,8 +158,8 @@ describe("DL-02 — non-FINANCING_PROVIDER actors not checked", () => {
   });
 
   it("THIRD_PARTY actor not in registry: no DL-02 violation", () => {
-    const violations = evaluateDL02(blockGraph, emptyRegistry);
-    // blockGraph has actor:treasury (THIRD_PARTY) — not checked by DL-02
+    const thirdPartyOnlyGraph: ActivityGraph = { ...blockGraph, actors: blockGraph.actors.filter((actor) => actor.type !== "FINANCING_PROVIDER") };
+    const violations = evaluateDL02(thirdPartyOnlyGraph, emptyRegistry);
     expect(violations).toHaveLength(0);
   });
 });

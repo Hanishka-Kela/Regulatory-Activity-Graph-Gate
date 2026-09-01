@@ -8,7 +8,7 @@
  * Tests:
  * - PASS: proper escrow topology (PA→ESCROW_BANK→MERCHANT)
  * - REVIEW: direct routing without escrow
- * - BLOCK graph (pool): PA-01 also fires because pool→merchant bypasses ESCROW_BANK
+ * - Lending pool demo: does not trigger because it does not settle to a merchant
  * - REVIEW graph: no PA-01 violation (EXTERNAL_API_ROUTING to RE account, not merchant directly from non-escrow)
  */
 
@@ -57,7 +57,7 @@ describe("PA-01 — REVIEW cases", () => {
     expect(violations[0].severity).toBe("REVIEW");
   });
 
-  it("violation message mentions RBI PA Master Direction 2025", () => {
+  it("violation message identifies the primary Direction and heuristic limitation", () => {
     const directGraph: ActivityGraph = {
       ...baselineGraph,
       accounts: baselineGraph.accounts.map((a) =>
@@ -67,17 +67,15 @@ describe("PA-01 — REVIEW cases", () => {
       ),
     };
     const violations = evaluatePA01(directGraph);
-    expect(violations[0].message).toContain("RBI PA Master Direction 2025");
+    expect(violations[0].message).toContain("Regulation of Payment Aggregators) Directions, 2025");
+    expect(violations[0].message).toContain("does not establish a legal violation");
   });
 });
 
-describe("PA-01 — BLOCK graph (pool pass-through case)", () => {
-  it("pool→merchant edge also triggers PA-01 (pool is THIRD_PARTY, not ESCROW_BANK)", () => {
-    // blockGraph: acc:treasury:pool (THIRD_PARTY) → acc:merchant:bank (MERCHANT)
-    // No ESCROW_BANK in the graph → PA-01 fires
+describe("PA-01 — lending pool demo", () => {
+  it("does not trigger for a loan disbursal to a borrower", () => {
     const violations = evaluatePA01(blockGraph);
-    expect(violations.length).toBeGreaterThanOrEqual(1);
-    expect(violations.some((v) => v.policyId === "PA-01")).toBe(true);
+    expect(violations).toHaveLength(0);
   });
 });
 

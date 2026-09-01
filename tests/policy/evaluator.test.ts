@@ -147,7 +147,7 @@ describe("CASE 2 — BLOCK: Partner X NOT in registry → DL-02 fires", () => {
 // ---------------------------------------------------------------------------
 // CASE 3 — BLOCK
 // ---------------------------------------------------------------------------
-describe("CASE 3 — BLOCK: pool pass-through replaces escrow", () => {
+describe("CASE 3 — BLOCK: loan disbursal through a third-party pool", () => {
   const input: PolicyInput = {
     delta: computeGraphDelta(baselineGraph, blockGraph),
     proposedGraph: blockGraph,
@@ -171,10 +171,9 @@ describe("CASE 3 — BLOCK: pool pass-through replaces escrow", () => {
     expect(dl01?.severity).toBe("BLOCK");
   });
 
-  it("PA-01 also fires (pool account is not ESCROW_BANK)", () => {
+  it("does not fire PA-01 because the flow ends at a borrower, not a merchant", () => {
     const result = evaluatePolicySync(input);
-    // blockGraph has no ESCROW_BANK → PA-01 fires too
-    expect(result.violations.some((v) => v.policyId === "PA-01")).toBe(true);
+    expect(result.violations.some((v) => v.policyId === "PA-01")).toBe(false);
   });
 });
 

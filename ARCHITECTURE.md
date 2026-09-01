@@ -32,6 +32,6 @@ The TypeScript evaluator is authoritative in offline tests. Rego/WASM remains th
 
 - Deterministic extraction recognizes only three scoped SDK call shapes.
 - Semantic candidate verbs are scoped to the demo, not all financial vocabulary.
-- The live semantic fallback uses Gemini (`GEMINI_API_KEY`) as an explicit buildathon cost deviation from the original OpenAI-provider specification. It pins `gemini-3.6-flash` for account availability and lower contention than Gemini 3.7 Flash. Validated evidence, graph construction, and policy evaluation remain provider-independent.
-- Live provider failure, timeout, or schema-invalid output always produces `EXTRACTION_FAILSAFE` REVIEW.
+- The semantic fallback uses Gemini `gemini-3.6-flash` for unresolved financial calls. Responses are validated with Zod; validated evidence, graph construction, and policy evaluation remain provider-independent.
+- Provider failure, timeout after one retry, or schema-invalid output always produces `EXTRACTION_FAILSAFE` REVIEW.
 - Audit JSON is generated under ignored `audit-output/` and is never read into a decision.

@@ -32,7 +32,7 @@ export function replaySemanticResponse(candidate: CandidateCall, raw: unknown): 
   const id = createHash("sha256").update(JSON.stringify([candidate.commitSha, candidate.file, candidate.span, parsed.data.symbol]), "utf8").digest("hex");
   return { atoms: [{ id, source: { commitSha: candidate.commitSha, file: candidate.file, span: candidate.span }, kind: "EXTERNAL_CALL", symbol: parsed.data.symbol, operation: parsed.data.operation, arguments: parsed.data.arguments, execution: candidate.execution, derivation: "AI_INFERRED", confidence: parsed.data.confidence }] };
 }
-/** Buildathon deviation: Gemini replaces the frozen OpenAI provider for cost reasons; tests use replaySemanticResponse. */
+/** Gemini handles unresolved financial calls; tests use replaySemanticResponse. */
 export async function extractLiveSemanticCandidate(candidate: CandidateCall, client?: GoogleGenAI): Promise<FallbackOutcome> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {

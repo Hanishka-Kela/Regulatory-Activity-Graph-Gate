@@ -1,22 +1,13 @@
 /**
  * CASE 3 — BLOCK fixture
  *
- * Scenario: The approved flow routes funds through a proper ESCROW_BANK account.
- * The proposed change replaces it with a third-party treasury/pool account
- * (POOL_PASS_THROUGH mechanism, THIRD_PARTY custody) before settling to the merchant.
+ * Scenario: Partner X, a financing provider, disburses a loan to a borrower
+ * through a third-party pool account instead of directly to the borrower's
+ * bank account. The graph includes the lending obligation that establishes
+ * the Digital Lending context for DL-01.
  *
- * This violates DL-01 (RBI Digital Lending Direction: loan disbursement/repayment
- * must flow directly — prohibited pass-through/pool account pattern).
- *
- * Delta:
- *   - removedMoneyEdges: edge (customer → escrow)       [ESCROW mechanism gone]
- *   - removedMoneyEdges: edge (escrow → merchant)       [DIRECT_BANK_TRANSFER gone]
- *   - removedAccounts:   acc:razorpay:escrow
- *   - addedAccounts:     acc:treasury:pool               (custody: THIRD_PARTY)
- *   - addedMoneyEdges:   edge (customer → treasury pool) (POOL_PASS_THROUGH)
- *   - addedMoneyEdges:   edge (treasury pool → merchant)  (DIRECT_BANK_TRANSFER)
- *
- * Expected: decision = BLOCK (DL-01 violation: POOL_PASS_THROUGH detected)
+ * Expected: BLOCK. The prototype flags a topology associated with DL-01 and
+ * requires compliance review; it does not itself establish a legal violation.
  */
 
 import { ActivityGraphBuilder } from "../src/graph/builder.js";
@@ -25,101 +16,20 @@ import type { ActivityGraph } from "../src/graph/types.js";
 export function buildBlockGraph(): ActivityGraph {
   const builder = new ActivityGraphBuilder();
 
-  // Actors — same as baseline
-  builder.addActor({
-    id: "actor:customer",
-    label: "End Customer",
-    type: "CUSTOMER",
-    derivation: "DETERMINISTIC",
-    hasUnverifiedEvidence: false,
-    evidenceIds: ["ev:block:001"],
-  });
+  builder.addActor({ id: "actor:borrower", label: "Borrower", type: "CUSTOMER", derivation: "DETERMINISTIC", hasUnverifiedEvidence: false, evidenceIds: ["ev:block:001"] });
+  builder.addActor({ id: "actor:partner_x", label: "Partner X NBFC", type: "FINANCING_PROVIDER", derivation: "DETERMINISTIC", hasUnverifiedEvidence: false, evidenceIds: ["ev:block:002"] });
+  builder.addActor({ id: "actor:treasury", label: "Third-Party Pool Operator", type: "THIRD_PARTY", derivation: "DETERMINISTIC", hasUnverifiedEvidence: false, evidenceIds: ["ev:block:003"] });
 
-  builder.addActor({
-    id: "actor:razorpay",
-    label: "Razorpay Payment Aggregator",
-    type: "PAYMENT_PROVIDER",
-    derivation: "DETERMINISTIC",
-    hasUnverifiedEvidence: false,
-    evidenceIds: ["ev:block:002"],
-  });
+  builder.addAccount({ id: "acc:partner_x:disbursement", label: "Partner X Disbursement Account", ownerActorId: "actor:partner_x", custody: "RE", derivation: "DETERMINISTIC", hasUnverifiedEvidence: false, evidenceIds: ["ev:block:004"] });
+  builder.addAccount({ id: "acc:treasury:pool", label: "Third-Party Loan Disbursal Pool", ownerActorId: "actor:treasury", custody: "THIRD_PARTY", derivation: "DETERMINISTIC", hasUnverifiedEvidence: false, evidenceIds: ["ev:block:005"] });
+  builder.addAccount({ id: "acc:borrower:bank", label: "Borrower Bank Account", ownerActorId: "actor:borrower", custody: "CUSTOMER", derivation: "DETERMINISTIC", hasUnverifiedEvidence: false, evidenceIds: ["ev:block:006"] });
 
-  builder.addActor({
-    id: "actor:merchant",
-    label: "Merchant",
-    type: "MERCHANT",
-    derivation: "DETERMINISTIC",
-    hasUnverifiedEvidence: false,
-    evidenceIds: ["ev:block:003"],
-  });
+  builder.addMoneyEdge({ id: "edge:lender-to-pool", label: "Loan disbursal to third-party pool", sourceAccountId: "acc:partner_x:disbursement", destinationAccountId: "acc:treasury:pool", mechanism: "POOL_PASS_THROUGH", derivation: "DETERMINISTIC", hasUnverifiedEvidence: false, evidenceIds: ["ev:block:007"] });
+  builder.addMoneyEdge({ id: "edge:pool-to-borrower", label: "Loan disbursal from pool to borrower", sourceAccountId: "acc:treasury:pool", destinationAccountId: "acc:borrower:bank", mechanism: "DIRECT_BANK_TRANSFER", derivation: "DETERMINISTIC", hasUnverifiedEvidence: false, evidenceIds: ["ev:block:008"] });
 
-  // NEW: Third-party treasury actor
-  builder.addActor({
-    id: "actor:treasury",
-    label: "Third-Party Treasury Operator",
-    type: "THIRD_PARTY",
-    derivation: "DETERMINISTIC",
-    hasUnverifiedEvidence: false,
-    evidenceIds: ["ev:block:010"],
-  });
+  builder.addObligation({ id: "obligation:borrower:partner_x", label: "Borrower loan obligation to Partner X", debtorActorId: "actor:borrower", creditorActorId: "actor:partner_x", tenorDays: 90, installments: 3, financingFeeBps: 150, derivation: "DETERMINISTIC", hasUnverifiedEvidence: false, evidenceIds: ["ev:block:009"] });
 
-  // CHANGED: No escrow account — replaced by third-party pool
-  builder.addAccount({
-    id: "acc:customer:wallet",
-    label: "Customer Payment Source",
-    ownerActorId: "actor:customer",
-    custody: "CUSTOMER",
-    derivation: "DETERMINISTIC",
-    hasUnverifiedEvidence: false,
-    evidenceIds: ["ev:block:004"],
-  });
-
-  // NEW: Third-party treasury pool (custody: THIRD_PARTY — trigger for DL-01)
-  builder.addAccount({
-    id: "acc:treasury:pool",
-    label: "Third-Party Treasury Pool Account",
-    ownerActorId: "actor:treasury",
-    custody: "THIRD_PARTY",
-    derivation: "DETERMINISTIC",
-    hasUnverifiedEvidence: false,
-    evidenceIds: ["ev:block:011"],
-  });
-
-  builder.addAccount({
-    id: "acc:merchant:bank",
-    label: "Merchant Settlement Account",
-    ownerActorId: "actor:merchant",
-    custody: "MERCHANT",
-    derivation: "DETERMINISTIC",
-    hasUnverifiedEvidence: false,
-    evidenceIds: ["ev:block:005"],
-  });
-
-  // NEW edges: pass-through pattern (DL-01 prohibited)
-  builder.addMoneyEdge({
-    id: "edge:cust-to-pool",
-    label: "Customer payment → third-party treasury pool",
-    sourceAccountId: "acc:customer:wallet",
-    destinationAccountId: "acc:treasury:pool",
-    mechanism: "POOL_PASS_THROUGH",
-    derivation: "DETERMINISTIC",
-    hasUnverifiedEvidence: false,
-    evidenceIds: ["ev:block:012"],
-  });
-
-  builder.addMoneyEdge({
-    id: "edge:pool-to-merchant",
-    label: "Pass-through from treasury pool to merchant",
-    sourceAccountId: "acc:treasury:pool",
-    destinationAccountId: "acc:merchant:bank",
-    mechanism: "DIRECT_BANK_TRANSFER",
-    settlementDelayDays: 1,
-    derivation: "DETERMINISTIC",
-    hasUnverifiedEvidence: false,
-    evidenceIds: ["ev:block:013"],
-  });
-
-  return builder.build("pr-commit-block-001", "CASE 3 — BLOCK: pool pass-through");
+  return builder.build("pr-commit-block-001", "CASE 3 — BLOCK: loan disbursal through pool");
 }
 
 export const blockGraph = buildBlockGraph();

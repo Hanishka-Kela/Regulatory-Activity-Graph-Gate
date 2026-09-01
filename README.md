@@ -2,6 +2,8 @@
 
 Regulatory Activity Graph Gate checks whether a TypeScript change changes approved financial activity before it is released. It extracts evidence from source code, models the related money movement and lending activity as a graph, then compares it with an approved baseline.
 
+It was built for Track 05 — Open Track of the Razorpay AI Buildathon as an AI-assisted pre-release engineering control for material or uncertain changes in a fintech application's financial activity topology.
+
 The CLI returns `PASS`, `REVIEW`, or `BLOCK` and writes the evaluation artifacts needed to inspect the result.
 
 ## Problem
@@ -38,19 +40,19 @@ Tests run offline and do not require an API key, OPA binary, network access, or 
 |------|----------|----------|
 | 1 | Logging rename, no topology change | `PASS` |
 | 2 | Partner X NBFC, 90-day installment plan, approved partner | `REVIEW` |
-| 3 | Pool/treasury account replaces escrow | `BLOCK` |
+| 3 | Loan disbursal through a third-party pool account | `BLOCK` |
 | 4 | `routePayment(paymentConfig.destination, payload)` — uncertain AI | `REVIEW` |
 
 ## Policies
 
 | ID | Rule | Severity | Source |
 |----|------|----------|--------|
-| DL-01 | Pool/pass-through account detected (`POOL_PASS_THROUGH` mechanism) | **BLOCK** | RBI (Digital Lending) Directions, 2025, Para 9 *(moderate confidence — see `policy-sources/dl-01.json`)* |
-| PA-01 | PA funds reach merchant without ESCROW_BANK intermediary | **REVIEW** | RBI PA Master Direction 2025, RBI/DPSS/2025-26/141 |
+| DL-01 | Pool/pass-through account in lending context (`POOL_PASS_THROUGH` plus an obligation to a financing provider) | **BLOCK** | RBI (Digital Lending) Directions, 2025, Paragraph 9 |
+| PA-01 | Direct non-escrow-to-merchant topology heuristic | **REVIEW** | RBI (Regulation of Payment Aggregators) Directions, 2025, Chapter V, Paragraphs 16–18 |
 | DL-02 | `FINANCING_PROVIDER` actor not in approved-partners registry | **BLOCK** | Para 17–derived internal governance control *(not a direct CIMS-compliance test; see `policy-sources/dl-02.json`)* |
 | DL-03 | New `Obligation` appears in delta (new lending relationship) | **REVIEW** | Project-defined safety-net rule, not a specific RBI clause — see `policy-sources/dl-03.json` |
 
-Policy metadata is stored in `policy-sources/`. Paragraph references should be verified against the primary RBI publication before being quoted externally.
+Policy metadata and primary RBI links are stored in `policy-sources/`. The prototype flags topology matching a configured policy and requires compliance review; it does not establish a legal violation.
 
 ## Project structure
 
@@ -66,6 +68,8 @@ Policy metadata is stored in `policy-sources/`. Paragraph references should be v
 - The deterministic extractor supports a limited set of SDK call patterns.
 - Candidate detection for the semantic fallback uses a limited financial vocabulary.
 - AI-classified calls can produce `REVIEW` when the financial activity cannot be resolved safely.
-- Regulatory paragraph references should be checked against the primary RBI publication before external use.
+- Graph extraction may omit context needed to assess regulatory exceptions or reach a legal conclusion.
+
+The offline candidate-triage evaluation set and its measured results are in [docs/evaluation.md](docs/evaluation.md).
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for implementation details, policy rationale, canonicalization rules, baseline governance, and additional limitations.

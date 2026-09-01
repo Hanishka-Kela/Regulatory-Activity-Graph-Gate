@@ -8,13 +8,13 @@
   "referenceNumber": "N/A",
   "effectiveDate": null,
   "section": "N/A",
-  "confidenceNote": "An earlier draft cited 'Para 2 (Definitions) + Para 5 (Compliance)' of the September 2022 Guidelines on Digital Lending. That citation could not be corroborated by any source during citation verification and has been removed rather than left in place implying a specificity it doesn't have. This rule is instead justified directly: it is REVIEW severity (not BLOCK), so its cost when triggered unnecessarily is a human review step, not a false BLOCK — consistent with the project's Principle 8 (if the system cannot safely determine the financial state, REVIEW is safer than PASS). Its general posture — new lending relationships warrant scrutiny — is the same posture underlying the specific, corroborated provisions in DL-01 (Para 9) and DL-02 (Para 17), but DL-03 does not claim to be a direct implementation of either specific clause.",
+  "confidenceNote": "DL-03 is a project-defined REVIEW rule. It sends new lending obligations for human review and does not claim to implement a specific RBI clause.",
   "clauseText": "Not applicable — see confidenceNote. This rule's rationale is internal project policy, not a quoted regulatory clause.",
   "observableGraphCondition": "Any Obligation present in GraphDelta.addedObligations (new lending obligation not present in the approved baseline).",
   "implementationNotes": [
     "This is a REVIEW trigger, not a BLOCK — the human reviewer decides whether the specific obligation terms are permissible.",
     "New obligations always trigger REVIEW even if the creditor is an approved partner. The human reviewer must confirm that the specific obligation terms (tenor, installments, feeBps) were part of the approved engagement.",
     "This rule does NOT duplicate DL-02: DL-02 checks whether the actor exists in the registry; DL-03 checks whether the specific obligation (with its financial terms) is in the approved baseline.",
-    "If a specific RBI clause is later identified that directly supports this rule, update sourceDocument/section/clauseText accordingly rather than leaving this file in its current honestly-unsourced state indefinitely."
+    "Regulatory conclusions remain the responsibility of the human reviewer."
   ]
 }

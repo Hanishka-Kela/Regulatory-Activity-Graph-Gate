@@ -10,7 +10,7 @@
  * 1. WASM mode (production): loads the pre-compiled policy.wasm artifact
  *
  * Policies implemented (TypeScript mode):
- *   DL-01: POOL_PASS_THROUGH edges → BLOCK
+ *   DL-01: POOL_PASS_THROUGH edges in lending context → BLOCK
  *   PA-01: non-escrow direct to merchant → REVIEW
  *   DL-02: unapproved FINANCING_PROVIDER in full graph → BLOCK
  *   DL-03: new Obligation in delta → REVIEW (new lending relationship)
@@ -81,27 +81,31 @@ async function evaluateWithWasm(input: PolicyInput): Promise<PolicyResult> {
 // ---------------------------------------------------------------------------
 
 /**
- * DL-01: Detect POOL_PASS_THROUGH mechanism edges.
+ * DL-01: Detect POOL_PASS_THROUGH mechanism edges in lending context.
  *
- * Source: RBI (Digital Lending) Directions, 2025, Para 9 (moderate confidence —
- *   see policy-sources/dl-01.json for the cross-validation basis; not confirmed
- *   against primary PDF text directly). Consolidates and replaces the September
- *   2022 Guidelines on Digital Lending's Para 3 equivalent provision.
- * URL: https://www.rbi.org.in/Scripts/NotificationUser.aspx (primary PDF is
- *   CAPTCHA-gated; could not be fetched directly during this research pass)
+ * Source: RBI (Digital Lending) Directions, 2025, Paragraph 9.
+ * RBI/2025-26/36; DOR.STR.REC.19/21.07.001/2025-26; May 8, 2025.
+ * URL: https://www.rbi.org.in/scripts/NotificationUser.aspx?Id=12848&Mode=0
  */
 function evaluateDL01(graph: ActivityGraph): PolicyViolation[] {
   const violations: PolicyViolation[] = [];
+  const financingProviderIds = new Set(
+    graph.actors.filter((actor) => actor.type === "FINANCING_PROVIDER").map((actor) => actor.id),
+  );
+  const hasLendingContext = graph.obligations.some((obligation) =>
+    financingProviderIds.has(obligation.creditorActorId),
+  );
+  if (!hasLendingContext) return violations;
   for (const edge of graph.moneyEdges) {
     if (edge.mechanism === "POOL_PASS_THROUGH") {
       violations.push({
         policyId: "DL-01",
         severity: "BLOCK",
         message:
-          `Prohibited pool/pass-through account pattern detected on edge '${edge.id}' ` +
+          `Pool/pass-through account topology detected on edge '${edge.id}' ` +
           `(${edge.sourceAccountId} → ${edge.destinationAccountId}). ` +
-          `RBI (Digital Lending) Directions, 2025, Para 9 (citation confidence: moderate — see policy-sources/dl-01.json) ` +
-          `requires direct disbursement/repayment without third-party pool accounts.`,
+          `Configured prototype policy DL-01 flags this lending-context topology for compliance review under ` +
+          `RBI (Digital Lending) Directions, 2025, Paragraph 9; this result does not by itself establish a legal violation.`,
         graphObjects: [{ id: edge.id, label: edge.label }],
         evidenceIds: edge.evidenceIds,
       });
@@ -113,8 +117,10 @@ function evaluateDL01(graph: ActivityGraph): PolicyViolation[] {
 /**
  * PA-01: Detect direct PA-to-merchant routing bypassing escrow.
  *
- * Source: RBI PA Master Direction 2025 (RBI/DPSS/2025-26/141), Escrow Account clause
- * URL: https://www.rbi.org.in/Scripts/NotificationUser.aspx (RBI/DPSS/2025-26/141)
+ * Source: RBI (Regulation of Payment Aggregators) Directions, 2025,
+ * Chapter V, Paragraphs 16–18. RBI/DPSS/2025-26/141;
+ * CO.DPSS.POLC.No.S-633/02-14-008/2025-26.
+ * URL: https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12896
  * Effective: 2025-09-15
  *
  * Demo scenario: PA-Online (domestic, INR)
@@ -149,8 +155,9 @@ function evaluatePA01(graph: ActivityGraph): PolicyViolation[] {
         message:
           `Payment flow edge '${edge.id}' routes funds directly to merchant account ` +
           `'${edge.destinationAccountId}' without passing through a designated ESCROW_BANK account. ` +
-          `RBI PA Master Direction 2025 (RBI/DPSS/2025-26/141) requires PA funds to flow through ` +
-          `a dedicated escrow/nodal account before merchant settlement.`,
+          `Configured prototype policy PA-01 flags this as a REVIEW heuristic under ` +
+          `RBI (Regulation of Payment Aggregators) Directions, 2025, Chapter V, Paragraphs 16–18. ` +
+          `The graph may not contain the full payment flow, so this result does not establish a legal violation.`,
         graphObjects: [
           { id: edge.id, label: edge.label },
           { id: dstAccount.id, label: dstAccount.label },
@@ -166,12 +173,7 @@ function evaluatePA01(graph: ActivityGraph): PolicyViolation[] {
 /**
  * DL-03: New lending obligation in delta → REVIEW.
  *
- * Status: PROJECT-DEFINED SAFETY-NET RULE, not a specific numbered RBI clause
- * — see policy-sources/dl-03.json. An earlier draft cited "Para 2 + Para 5"
- * of the 2022 Guidelines; that citation could not be corroborated and was
- * removed rather than left looking more authoritative than it is. Justified
- * directly by Principle 8 (REVIEW is safer than PASS under uncertainty) since
- * this rule is REVIEW, not BLOCK severity.
+ * Status: PROJECT-DEFINED SAFETY-NET RULE, not a specific numbered RBI clause.
  *
  * Any new Obligation in GraphDelta.addedObligations triggers REVIEW.
  * Even approved partners' obligations require human review of the specific terms.
@@ -202,18 +204,12 @@ function evaluateDL03(
 /**
  * DL-02: Approved partner structural check.
  *
- * Source: RBI (Digital Lending) Directions, 2025, Para 17 (strong confidence —
- *   three independent secondary sources converge on this paragraph number).
- *   This is a MECHANISM CHANGE, not a renumbering: the superseded September
- *   2022 Guidelines' Para 8 "board-approved LSP list" requirement is replaced
- *   by a requirement to report all DLAs/LSPs to RBI's CIMS portal with
- *   CCO-certified accuracy, effective 2025-06-15. This check does NOT verify
- *   CIMS reporting occurred — it's a structural internal-governance gate that
- *   is a necessary precondition for correct CIMS certification (an RE can't
- *   certify a partner list it isn't tracking internally). See
- *   policy-sources/dl-02.json for the full rationale.
- * URL: https://www.rbi.org.in/Scripts/NotificationUser.aspx (primary PDF is
- *   CAPTCHA-gated; could not be fetched directly during this research pass)
+ * Source context: RBI (Digital Lending) Directions, 2025, Paragraph 17.
+ * RBI/2025-26/36; DOR.STR.REC.19/21.07.001/2025-26; May 8, 2025.
+ * URL: https://www.rbi.org.in/scripts/NotificationUser.aspx?Id=12848&Mode=0
+ * This is a project-defined internal governance control derived from the need
+ * to track financing providers and maintain accurate regulatory reporting. It
+ * does not directly implement Paragraph 17 or prove CIMS compliance.
  *
  * Checks ALL FINANCING_PROVIDER actors in the FULL proposedGraph (not just delta)
  * per section 20 design rationale.
@@ -236,10 +232,9 @@ function evaluateDL02(
         severity: "BLOCK",
         message:
           `Financing provider actor '${actor.id}' (${actor.label}) is not present in the ` +
-          `approved-partners registry. RBI (Digital Lending) Directions, 2025, Para 17 requires ` +
-          `REs to maintain an accurate internal record of DLAs/LSPs before certifying them via ` +
-          `the CIMS portal. Add this partner to .regulatory/approved-partners.json ` +
-          `before merging.`,
+          `approved-partners registry. Project-defined internal governance control DL-02, derived from ` +
+          `the reporting context in RBI (Digital Lending) Directions, 2025, Paragraph 17, requires ` +
+          `review before merging. It does not prove CIMS compliance.`,
         graphObjects: [{ id: actor.id, label: actor.label }],
         evidenceIds: actor.evidenceIds,
       });

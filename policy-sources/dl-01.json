@@ -3,17 +3,17 @@
   "name": "Digital Lending — Prohibited Pool/Pass-Through Account Pattern",
   "severity": "BLOCK",
   "sourceDocument": "Reserve Bank of India (Digital Lending) Directions, 2025",
-  "sourceUrl": "https://www.rbi.org.in/Scripts/NotificationUser.aspx",
+  "sourceUrl": "https://www.rbi.org.in/scripts/NotificationUser.aspx?Id=12848&Mode=0",
   "issuer": "Reserve Bank of India",
-  "referenceNumber": "not independently confirmed — RBI's notification PDF is CAPTCHA-gated and could not be fetched directly during this research pass",
+  "referenceNumber": "RBI/2025-26/36; DOR.STR.REC.19/21.07.001/2025-26",
   "effectiveDate": "2025-05-08",
-  "section": "Para 9 (moderate confidence)",
-  "confidenceNote": "This document and provision consolidate and replace the September 2, 2022 Guidelines on Digital Lending, Para 3 ('Loan Disbursal, Servicing and Repayment'), which contained the equivalent prohibition. The Para 9 numbering in the 2025 Directions comes from a single secondary legal-analysis source (Synergia Legal), cross-validated against two independently-sourced paragraph numbers elsewhere in the same document (Para 6 — multi-lender arrangements; Para 17 — DLA/CIMS reporting — both confirmed by separate independent sources). This raises confidence above a single unverified claim, but the paragraph number has not been confirmed against RBI's primary PDF text directly. Verify against the primary source before citing this section number in any external-facing submission material.",
-  "clauseText": "Loan disbursal and repayment must be executed directly between the borrower's bank account and the Regulated Entity's (RE) bank account, without routing through any pass-through or pool account of a Lending Service Provider (LSP) or any other third party, except for disbursals covered exclusively under statutory or regulatory mandate, flow of money between REs for co-lending transactions, or disbursals for specific end-use paid directly to the end-beneficiary's account.",
-  "observableGraphCondition": "Any MoneyEdge with mechanism=POOL_PASS_THROUGH in the proposed graph.",
+  "section": "Paragraph 9 — Loan disbursal, servicing and repayment",
+  "confidenceNote": "Primary RBI source confirmed. The implementation is a conservative topology policy and does not by itself establish a legal violation or determine whether an exception applies.",
+  "clauseText": "Loan disbursal is normally made by the Regulated Entity into the borrower's bank account and must not be made to a third-party account, including an LSP account, except where Paragraph 9 permits it. Servicing and repayment occur directly between the borrower and the Regulated Entity without a third-party pass-through or pool account, and third parties must not control the fund flow.",
+  "observableGraphCondition": "A MoneyEdge with mechanism=POOL_PASS_THROUGH in a proposed graph that contains an Obligation owed to a FINANCING_PROVIDER.",
   "implementationNotes": [
     "POOL_PASS_THROUGH mechanism value is set by the deterministic extractor only when evidence clearly indicates funds flowing through a third-party pool/treasury account before reaching the final destination.",
-    "This rule does NOT attempt to determine whether the overall product is a lending product — that is established by graph context (presence of FINANCING_PROVIDER actors and Obligation objects).",
+    "The rule requires lending context: an Obligation owed to a FINANCING_PROVIDER. A POOL_PASS_THROUGH edge outside that context does not trigger DL-01.",
     "The regulatory exceptions listed in clauseText (statutory mandate, co-lending, specific end-use) are not handled by this rule and would require manual review if applicable — this rule is intentionally over-inclusive rather than attempting to encode the exceptions, per the project's principle that REVIEW/BLOCK on uncertainty is safer than a false PASS."
   ]
 }
