@@ -50,6 +50,7 @@ export function failsafe(message: string): FallbackOutcome { return { atoms: [],
 /** Applies only extraction-shape failures after normal deterministic policy evaluation. */
 export function applyExtractionFailsafe(result: PolicyResult, outcome: FallbackOutcome): PolicyResult {
   if (!outcome.failsafe || result.decision === "BLOCK") return result;
-  return { ...result, decision: "REVIEW", violations: [...result.violations, outcome.failsafe] };
+  const specificViolations = result.violations.filter((violation) => violation.policyId !== "TOPOLOGY-CHANGE");
+  return { ...result, decision: "REVIEW", violations: [...specificViolations, outcome.failsafe] };
 }
 function value(node: Node): Value { if (Node.isStringLiteral(node)) return { type: "LITERAL", value: node.getLiteralText() }; if (Node.isNumericLiteral(node)) return { type: "LITERAL", value: Number(node.getText()) }; if (Node.isIdentifier(node) || Node.isPropertyAccessExpression(node)) return { type: "REFERENCE", expression: node.getText() }; return { type: "UNKNOWN", expression: node.getText() }; }

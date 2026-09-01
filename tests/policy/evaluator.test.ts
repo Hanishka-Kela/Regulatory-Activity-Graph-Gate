@@ -264,6 +264,11 @@ describe("CASE 4 — AMBIGUOUS: uncertain AI evidence forces REVIEW", () => {
     expect(result.violations.some((v) => v.policyId === "UNCERTAIN-EVIDENCE")).toBe(true);
   });
 
+  it("does not duplicate uncertain-evidence review with generic topology review", () => {
+    const result = evaluatePolicySync(input);
+    expect(result.violations.some((v) => v.policyId === "TOPOLOGY-CHANGE")).toBe(false);
+  });
+
   it("proposed graph has hasUnverifiedEvidence=true on some objects", () => {
     const hasUncertain = [
       ...ambiguousGraph.actors,

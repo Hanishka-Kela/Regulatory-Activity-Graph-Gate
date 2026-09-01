@@ -11,5 +11,18 @@ describe("AI semantic fallback", () => {
   it("surfaces the decoy but recorded replay emits no evidence", () => { const c = findSemanticCandidates(source("non-adapter.ts"), "c"); expect(c).toHaveLength(1); expect(replaySemanticResponse(c[0]!, json("non-adapter.json"))).toEqual({ atoms: [] }); });
   it("schema-invalid replay and extractor failure force the same REVIEW failsafe", () => { expect(replaySemanticResponse(findSemanticCandidates(source("ambiguous-route.ts"), "c")[0]!, { nope: true }).failsafe?.policyId).toBe("EXTRACTION_FAILSAFE"); expect(failsafe("timeout").failsafe?.severity).toBe("REVIEW"); });
   it("overrides an otherwise PASS result with the frozen-shape failsafe violation", () => { const result = applyExtractionFailsafe({ decision: "PASS", violations: [], policyVersion: "t", evaluatedAt: "now" }, failsafe("timeout")); expect(result).toMatchObject({ decision: "REVIEW", violations: [expect.objectContaining({ policyId: "EXTRACTION_FAILSAFE" })] }); });
+
+  it("gives extraction failsafe precedence over a generic topology review", () => {
+    const result = applyExtractionFailsafe(
+      {
+        decision: "REVIEW",
+        violations: [{ policyId: "TOPOLOGY-CHANGE", severity: "REVIEW", message: "generic", graphObjects: [], evidenceIds: [] }],
+        policyVersion: "t",
+        evaluatedAt: "now",
+      },
+      failsafe("timeout"),
+    );
+    expect(result.violations.map((violation) => violation.policyId)).toEqual(["EXTRACTION_FAILSAFE"]);
+  });
   it("converts missing-key client construction into REVIEW failsafe", async () => { const original = process.env.GEMINI_API_KEY; delete process.env.GEMINI_API_KEY; try { const outcome = await extractLiveSemanticCandidate(findSemanticCandidates(source("ambiguous-route.ts"), "c")[0]!); expect(outcome.failsafe?.policyId).toBe("EXTRACTION_FAILSAFE"); } finally { if (original !== undefined) process.env.GEMINI_API_KEY = original; } });
 });
