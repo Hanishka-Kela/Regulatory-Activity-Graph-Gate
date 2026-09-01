@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { extractEvidenceFromFile } from "../../src/evidence/extractor.js";
 import { buildGraphFromEvidence } from "../../src/graph/builder.js";
 import { buildBaselineGraph } from "../../fixtures/baseline.js";
-import { computeGraphDelta } from "../../src/graph/diff.js";
+import { computeGraphDelta, isDeltaEmpty } from "../../src/graph/diff.js";
 import { evaluatePolicySync } from "../../src/policy/evaluator.js";
 import type { ApprovedPartnerRegistry } from "../../src/policy/types.js";
 
@@ -13,6 +13,40 @@ const partners: ApprovedPartnerRegistry = { version: "1", updatedAt: "2026-08-25
 const result = (graph: ReturnType<typeof buildGraphFromEvidence>) => evaluatePolicySync({ delta: computeGraphDelta(buildBaselineGraph(), graph), proposedGraph: graph, approvedPartners: partners, policyVersion: "test" });
 
 describe("ActivityGraphBuilder evidence path", () => {
+  it("reconstructs the approved baseline from a real source flow", () => {
+    const graph = build("pass-flow.ts");
+    expect(graph.moneyEdges[1]).toMatchObject({ settlementDelayDays: 1 });
+    expect(isDeltaEmpty(computeGraphDelta(buildBaselineGraph(), graph))).toBe(true);
+    expect(result(graph)).toMatchObject({ decision: "PASS", violations: [] });
+  });
+
+  it("ignores logging, labels, source locations, and provenance for canonical PASS", () => {
+    const plain = build("pass-flow.ts");
+    const logging = build("pass-flow-logging.ts");
+    expect(plain.hash).toBe(logging.hash);
+    expect(isDeltaEmpty(computeGraphDelta(buildBaselineGraph(), logging))).toBe(true);
+    expect(result(logging).decision).toBe("PASS");
+  });
+
+  it("reviews declaration-only source because it removes the approved topology", () => {
+    const graph = build("sdk-modules.d.ts");
+    const evaluation = result(graph);
+    expect(graph.actors).toHaveLength(0);
+    expect(evaluation.decision).toBe("REVIEW");
+    expect(evaluation.violations).toEqual([
+      expect.objectContaining({ policyId: "TOPOLOGY-CHANGE", severity: "REVIEW" }),
+    ]);
+  });
+
+  it("accepts only a non-negative integer settlement delay", () => {
+    const evidence = extractEvidenceFromFile(source("pass-flow.ts"), { commitSha: "source-commit" });
+    const invalid = evidence.map((atom) => atom.symbol === "partnerXClient.transfer" && atom.arguments.arg9
+      ? { ...atom, arguments: { ...atom.arguments, arg9: { type: "LITERAL" as const, value: -1 } } }
+      : atom);
+    const graph = buildGraphFromEvidence(invalid, "source-commit");
+    expect(graph.moneyEdges.every((edge) => edge.settlementDelayDays === undefined)).toBe(true);
+  });
+
   it("maps real extracted Partner X evidence to the frozen review obligation", () => {
     const graph = build("review-flow.ts");
     expect(graph.obligations).toMatchObject([{ debtorActorId: "actor:customer", creditorActorId: "actor:partner_x", tenorDays: 90, installments: 3, financingFeeBps: 150 }]);

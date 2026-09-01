@@ -250,6 +250,7 @@ export function buildGraphFromEvidence(
       const sourceCustody = enumValue<Account["custody"]>(atom.arguments.arg5, ["CUSTOMER", "MERCHANT", "RE", "ESCROW_BANK", "THIRD_PARTY"], "UNKNOWN");
       const destinationCustody = enumValue<Account["custody"]>(atom.arguments.arg8, ["CUSTOMER", "MERCHANT", "RE", "ESCROW_BANK", "THIRD_PARTY"], "UNKNOWN");
       const mechanism = enumValue<MoneyEdge["mechanism"]>(atom.arguments.arg2, ["DIRECT_BANK_TRANSFER", "INTERNAL_LEDGER_TRANSFER", "ESCROW", "EXTERNAL_API_ROUTING", "POOL_PASS_THROUGH"], "UNKNOWN");
+      const settlementDelayDays = optionalNonNegativeNumber(atom.arguments.arg9);
       addActor(sourceActorId, sourceType, atom);
       addActor(destinationActorId, destinationType, atom);
       addAccount(sourceAccountId, sourceActorId, sourceCustody, atom);
@@ -260,6 +261,7 @@ export function buildGraphFromEvidence(
         sourceAccountId,
         destinationAccountId,
         mechanism,
+        ...(settlementDelayDays === undefined ? {} : { settlementDelayDays }),
         ...provenance([atom]),
       });
     }
@@ -303,6 +305,10 @@ function positiveNumber(value: EvidenceAtom["arguments"][string]): number | unde
 }
 function nonNegativeNumber(value: EvidenceAtom["arguments"][string]): number | undefined {
   return value?.type === "LITERAL" && typeof value.value === "number" && Number.isInteger(value.value) && value.value >= 0 ? value.value : undefined;
+}
+function optionalNonNegativeNumber(value: EvidenceAtom["arguments"][string]): number | undefined {
+  if (value === undefined) return undefined;
+  return nonNegativeNumber(value);
 }
 function enumValue<T extends string>(value: EvidenceAtom["arguments"][string], allowed: readonly T[], fallback: T): T {
   return value?.type === "LITERAL" && typeof value.value === "string" && (allowed as readonly string[]).includes(value.value) ? value.value as T : fallback;

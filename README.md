@@ -17,7 +17,7 @@ A small code or configuration change can change where funds move, add a financin
 3. The extracted evidence is converted into a financial activity graph.
 4. The proposed graph is compared with the approved baseline.
 5. Policy rules evaluate the graph delta and proposed graph.
-6. The CLI returns `PASS`, `REVIEW`, or `BLOCK` and produces audit artifacts.
+6. The CLI returns `PASS` only for an empty canonical topology delta; otherwise it returns a specific `BLOCK`/`REVIEW` or the project-defined `TOPOLOGY-CHANGE` review.
 
 ## Quickstart
 
@@ -40,7 +40,7 @@ The CLI, tests, and GitHub Action use the deterministic TypeScript policy evalua
 
 | Case | Scenario | Decision |
 |------|----------|----------|
-| 1 | Logging rename, no topology change | `PASS` |
+| 1 | `pass-flow.ts` reconstructs the approved topology; logging-only variation leaves it unchanged | `PASS` |
 | 2 | Partner X NBFC, 90-day installment plan, approved partner | `REVIEW` |
 | 3 | Loan disbursal through a third-party pool account | `BLOCK` |
 | 4 | `routePayment(paymentConfig.destination, payload)` — uncertain AI | `REVIEW` |
@@ -53,8 +53,9 @@ The CLI, tests, and GitHub Action use the deterministic TypeScript policy evalua
 | PA-01 | Direct non-escrow-to-merchant topology heuristic | **REVIEW** | RBI (Regulation of Payment Aggregators) Directions, 2025, Chapter V, Paragraphs 16–18 |
 | DL-02 | `FINANCING_PROVIDER` actor not in approved-partners registry | **BLOCK** | Para 17–derived internal governance control *(not a direct CIMS-compliance test; see `policy-sources/dl-02.json`)* |
 | DL-03 | New `Obligation` appears in delta (new lending relationship) | **REVIEW** | Project-defined safety-net rule, not a specific RBI clause — see `policy-sources/dl-03.json` |
+| TOPOLOGY-CHANGE | Non-empty canonical delta with no more specific finding | **REVIEW** | Project-defined safety control, not an RBI requirement |
 
-Policy metadata and primary RBI links are stored in `policy-sources/`. The prototype flags topology matching a configured policy and requires compliance review; it does not establish a legal violation.
+Specific BLOCK/REVIEW findings take precedence over `TOPOLOGY-CHANGE`, so the generic review is not duplicated. Policy metadata and primary RBI links are stored in `policy-sources/`. The prototype flags topology matching a configured policy and requires compliance review; it does not establish a legal violation. `sdk-modules.d.ts` supplies fixture type declarations only and is not a no-change flow demonstration.
 
 ## Project structure
 

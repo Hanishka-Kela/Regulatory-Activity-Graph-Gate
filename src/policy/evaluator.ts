@@ -30,6 +30,7 @@ import type {
   ActivityGraph,
   GraphDelta,
 } from "../graph/types.js";
+import { isDeltaEmpty } from "../graph/diff.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -252,6 +253,22 @@ function aggregateViolations(violations: PolicyViolation[]): "PASS" | "REVIEW" |
   return "PASS";
 }
 
+function topologyChangeObjects(delta: GraphDelta): PolicyViolation["graphObjects"] {
+  const objects = [
+    ...delta.addedActors,
+    ...delta.removedActors,
+    ...delta.addedAccounts,
+    ...delta.removedAccounts,
+    ...delta.addedMoneyEdges,
+    ...delta.removedMoneyEdges,
+    ...delta.changedMoneyEdges.map(({ after }) => after),
+    ...delta.addedObligations,
+    ...delta.removedObligations,
+    ...delta.changedObligations.map(({ after }) => after),
+  ];
+  return [...new Map(objects.map((object) => [object.id, { id: object.id, label: object.label }])).values()];
+}
+
 /**
  * Evaluate policy in pure TypeScript mode.
  * Semantically equivalent to the Rego policies in src/policy/rego/.
@@ -292,6 +309,19 @@ function evaluateWithTypeScript(input: PolicyInput): PolicyResult {
           .filter((o) => o.hasUnverifiedEvidence)
           .map((o) => ({ id: o.id, label: o.label })),
       ],
+      evidenceIds: [],
+    });
+  }
+
+
+  if (allViolations.length === 0 && !isDeltaEmpty(input.delta)) {
+    allViolations.push({
+      policyId: "TOPOLOGY-CHANGE",
+      severity: "REVIEW",
+      message:
+        "The canonical financial topology differs from the approved baseline and no more specific policy explains the change. " +
+        "Project-defined safety control TOPOLOGY-CHANGE requires human review; this is not an RBI requirement or legal-compliance determination.",
+      graphObjects: topologyChangeObjects(input.delta),
       evidenceIds: [],
     });
   }

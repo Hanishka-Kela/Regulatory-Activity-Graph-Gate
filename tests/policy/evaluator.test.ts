@@ -14,6 +14,8 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { evaluatePolicySync } from "../../src/policy/evaluator.js";
 import type { PolicyInput } from "../../src/policy/types.js";
 import type { ApprovedPartnerRegistry } from "../../src/policy/types.js";
@@ -120,6 +122,11 @@ describe("CASE 2 — REVIEW: Partner X installment plan, approved partner", () =
     const result = evaluatePolicySync(input);
     expect(result.violations.some((v) => v.policyId === "DL-02")).toBe(false);
   });
+
+  it("does not add a duplicate generic topology review", () => {
+    const result = evaluatePolicySync(input);
+    expect(result.violations.some((v) => v.policyId === "TOPOLOGY-CHANGE")).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -174,6 +181,60 @@ describe("CASE 3 — BLOCK: loan disbursal through a third-party pool", () => {
   it("does not fire PA-01 because the flow ends at a borrower, not a merchant", () => {
     const result = evaluatePolicySync(input);
     expect(result.violations.some((v) => v.policyId === "PA-01")).toBe(false);
+  });
+
+  it("does not add a generic review alongside a specific BLOCK", () => {
+    const result = evaluatePolicySync(input);
+    expect(result.violations.some((v) => v.policyId === "TOPOLOGY-CHANGE")).toBe(false);
+  });
+});
+
+describe("TOPOLOGY-CHANGE fallback", () => {
+  const evaluate = (baseline: typeof baselineGraph, proposed: typeof baselineGraph) =>
+    evaluatePolicySync({
+      delta: computeGraphDelta(baseline, proposed),
+      proposedGraph: proposed,
+      approvedPartners: approvedRegistry,
+      policyVersion: POLICY_VERSION,
+    });
+
+  it.each([
+    ["actor", { ...baselineGraph, actors: baselineGraph.actors.slice(1) }],
+    ["account", { ...baselineGraph, accounts: baselineGraph.accounts.slice(1) }],
+    ["money edge", { ...baselineGraph, moneyEdges: baselineGraph.moneyEdges.slice(1) }],
+  ])("removing an existing %s returns REVIEW", (_kind, proposed) => {
+    const result = evaluate(baselineGraph, proposed);
+    expect(result.decision).toBe("REVIEW");
+    expect(result.violations).toEqual([
+      expect.objectContaining({ policyId: "TOPOLOGY-CHANGE", severity: "REVIEW" }),
+    ]);
+  });
+
+  it("removing an existing obligation returns REVIEW", () => {
+    const proposed = { ...reviewGraph, obligations: [] };
+    const result = evaluate(reviewGraph, proposed);
+    expect(result.decision).toBe("REVIEW");
+    expect(result.violations[0].policyId).toBe("TOPOLOGY-CHANGE");
+  });
+
+  it("reviews an otherwise unmatched mechanism change", () => {
+    const proposed = {
+      ...baselineGraph,
+      moneyEdges: baselineGraph.moneyEdges.map((edge, index) =>
+        index === 0 ? { ...edge, mechanism: "DIRECT_BANK_TRANSFER" as const } : edge,
+      ),
+    };
+    const result = evaluate(baselineGraph, proposed);
+    expect(result.decision).toBe("REVIEW");
+    expect(result.violations[0]).toMatchObject({ policyId: "TOPOLOGY-CHANGE" });
+  });
+
+  it("mirrors the TypeScript fallback condition in Rego", () => {
+    const rego = readFileSync(resolve("src/policy/rego/main.rego"), "utf8");
+    expect(rego).toContain("count(specific_violations) == 0");
+    expect(rego).toContain("delta_non_empty");
+    expect(rego).toContain('"policyId": "TOPOLOGY-CHANGE"');
+    expect(rego).toContain('"severity": "REVIEW"');
   });
 });
 

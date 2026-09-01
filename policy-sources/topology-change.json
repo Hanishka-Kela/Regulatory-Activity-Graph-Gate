@@ -1,0 +1,18 @@
+{
+  "policyId": "TOPOLOGY-CHANGE",
+  "name": "Unmatched Canonical Topology Change Requires Review",
+  "severity": "REVIEW",
+  "sourceDocument": "PROJECT-DEFINED SAFETY CONTROL — not an RBI requirement",
+  "sourceUrl": null,
+  "issuer": "N/A",
+  "referenceNumber": "N/A",
+  "effectiveDate": null,
+  "section": "N/A",
+  "clauseText": "A material canonical financial-topology change cannot silently pass. When the graph delta is non-empty and no more specific policy explains it, human review is required.",
+  "observableGraphCondition": "GraphDelta is non-empty and no specific policy or evidence safeguard has produced a finding.",
+  "implementationNotes": [
+    "This is a project-defined release safety rule, not an RBI clause or legal-compliance determination.",
+    "Specific BLOCK and REVIEW findings take precedence and suppress this generic finding.",
+    "Canonicalization excludes labels, provenance, source locations, evidence IDs, and trust metadata from topology identity."
+  ]
+}

@@ -14,7 +14,7 @@ Regulatory Activity Graph Gate evaluates the full TypeScript source snapshot at 
 ## Capability inventory
 
 - **Graph model and canonicalization** — stable financial-topology identity, graph hashing, and baseline/proposed deltas.
-- **Policy engine** — four scoped RBI/project safety rules with TypeScript evaluation and optional Rego/WASM runtime.
+- **Policy engine** — scoped RBI/project safety rules plus a generic unmatched-topology REVIEW, with TypeScript evaluation and optional Rego/WASM runtime.
 - **Deterministic extraction** — AST-backed evidence for three known financial SDK adapters.
 - **Semantic fallback** — Gemini-assisted normalization of unresolved candidate calls, with Zod validation and fail-safe REVIEW.
 - **Release gate** — Commander CLI and GitHub Actions required check with PASS/BLOCK/REVIEW exit semantics.
@@ -23,6 +23,8 @@ Regulatory Activity Graph Gate evaluates the full TypeScript source snapshot at 
 ## Canonicalization
 
 Financial identity is hashed independently of labels, evidence IDs, derivation, and trust metadata. Actor identity includes `id` and type; account identity includes `id`, owner, and custody; money-edge identity is source/destination accounts; obligation identity is debtor/creditor actors. Trust metadata remains available to policy without changing topology identity.
+
+`PASS` requires an empty canonical topology delta. Specific BLOCK or REVIEW policies take precedence; when a non-empty delta has no specific finding, project-defined `TOPOLOGY-CHANGE` produces REVIEW. The real Case 1 fixtures (`pass-flow.ts` and its logging-only variation) reconstruct the approved baseline through extraction and graph building. `sdk-modules.d.ts` is only a type-declaration fixture.
 
 ## Policy runtime
 
