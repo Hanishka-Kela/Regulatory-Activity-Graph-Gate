@@ -1,31 +1,16 @@
 /**
  * Phase 2 — Policy Evaluator
  *
- * Architecture (section 6):
- *   Rego source → `opa build -t wasm` → committed .wasm → @open-policy-agent/opa-wasm → Node
- *
- * Since the WASM artifact must be compiled offline with `npm run build:policy`
- * (which requires the OPA binary), this evaluator provides TWO evaluation modes:
- *
- * 1. WASM mode (production): loads the pre-compiled policy.wasm artifact
- *
- * Policies implemented (TypeScript mode):
+ * The deterministic TypeScript implementation is the current authoritative
+ * runtime used by the CLI, tests, and GitHub Action. Policies implemented:
  *   DL-01: POOL_PASS_THROUGH edges in lending context → BLOCK
  *   PA-01: non-escrow direct to merchant → REVIEW
  *   DL-02: unapproved FINANCING_PROVIDER in full graph → BLOCK
  *   DL-03: new Obligation in delta → REVIEW (new lending relationship)
- *    using @open-policy-agent/opa-wasm. This is the canonical runtime path.
  *
- * 2. TypeScript mode (test / fallback): implements the same policy logic
- *    deterministically in TypeScript. Used when:
- *      - The WASM artifact is not present (e.g. fresh clone before `npm run build:policy`)
- *      - Tests (npm test must NOT require OPA binary or network)
- *
- * The TypeScript mode is semantically equivalent to the Rego policies.
- * If the two ever diverge, the Rego source is the source of truth.
- *
- * WASM staleness: if `.rego` files are edited without running `npm run build:policy`,
- * the WASM will be stale. This is documented in the README as a real failure mode.
+ * Rego sources mirror this logic. The async evaluatePolicy API optionally uses
+ * a compiled Rego/WASM artifact when present; the active release CLI calls
+ * evaluatePolicySync and therefore does not invoke that optional path.
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -89,15 +74,26 @@ async function evaluateWithWasm(input: PolicyInput): Promise<PolicyResult> {
  */
 function evaluateDL01(graph: ActivityGraph): PolicyViolation[] {
   const violations: PolicyViolation[] = [];
-  const financingProviderIds = new Set(
+  const financingProviderIds = new Set<string>(
     graph.actors.filter((actor) => actor.type === "FINANCING_PROVIDER").map((actor) => actor.id),
   );
-  const hasLendingContext = graph.obligations.some((obligation) =>
-    financingProviderIds.has(obligation.creditorActorId),
+  const lendingCreditorIds = new Set<string>(
+    graph.obligations
+      .filter((obligation) => financingProviderIds.has(obligation.creditorActorId))
+      .map((obligation) => obligation.creditorActorId),
   );
-  if (!hasLendingContext) return violations;
+  const accountById = new Map<string, Account>(
+    graph.accounts.map((account) => [account.id, account]),
+  );
+
   for (const edge of graph.moneyEdges) {
-    if (edge.mechanism === "POOL_PASS_THROUGH") {
+    const sourceOwnerId = accountById.get(edge.sourceAccountId)?.ownerActorId;
+    const destinationOwnerId = accountById.get(edge.destinationAccountId)?.ownerActorId;
+    const involvesLendingCreditor =
+      (sourceOwnerId !== undefined && lendingCreditorIds.has(sourceOwnerId)) ||
+      (destinationOwnerId !== undefined && lendingCreditorIds.has(destinationOwnerId));
+
+    if (edge.mechanism === "POOL_PASS_THROUGH" && involvesLendingCreditor) {
       violations.push({
         policyId: "DL-01",
         severity: "BLOCK",
@@ -315,16 +311,15 @@ function evaluateWithTypeScript(input: PolicyInput): PolicyResult {
 // ---------------------------------------------------------------------------
 
 export interface EvaluatorOptions {
-  /** Force TypeScript mode even if WASM exists. Default: false. */
+  /** Force the authoritative TypeScript implementation in the optional async API. */
   forceTypeScript?: boolean;
 }
 
 /**
  * Evaluate a PolicyInput against all registered policies.
  *
- * Mode selection:
- *   - If WASM artifact exists and forceTypeScript is false: use WASM mode
- *   - Otherwise: use TypeScript mode (required for npm test, offline)
+ * Optional async API: uses WASM when an artifact exists unless TypeScript is
+ * forced. The CLI, tests, and GitHub Action use evaluatePolicySync instead.
  */
 export async function evaluatePolicy(
   input: PolicyInput,
@@ -336,8 +331,8 @@ export async function evaluatePolicy(
     try {
       return await evaluateWithWasm(input);
     } catch (err) {
-      // WASM failure fallthrough to TypeScript mode with forced REVIEW
-      // Cannot silently PASS if WASM fails (section 24 principle)
+      // If the optional WASM path fails, evaluation falls back to the current
+      // authoritative TypeScript implementation.
       console.error("[PolicyEvaluator] WASM evaluation failed, falling back to TypeScript mode:", err);
     }
   }
@@ -346,8 +341,7 @@ export async function evaluatePolicy(
 }
 
 /**
- * Synchronous variant using TypeScript mode only.
- * Use in tests and contexts where async is not needed.
+ * Current authoritative runtime used by the CLI, tests, and GitHub Action.
  */
 export function evaluatePolicySync(input: PolicyInput): PolicyResult {
   return evaluateWithTypeScript(input);

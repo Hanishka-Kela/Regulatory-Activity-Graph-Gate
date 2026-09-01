@@ -12,6 +12,8 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { evaluateDL01 } from "../../src/policy/evaluator.js";
 import { baselineGraph } from "../../fixtures/baseline.js";
 import { blockGraph } from "../../fixtures/case-block.js";
@@ -28,6 +30,18 @@ describe("DL-01 — PASS cases", () => {
       ),
     };
     expect(evaluateDL01(nonLendingGraph)).toHaveLength(0);
+  });
+
+  it("lending obligation plus an unrelated POOL_PASS_THROUGH edge does not trigger", () => {
+    const unrelatedPoolGraph: ActivityGraph = {
+      ...blockGraph,
+      moneyEdges: blockGraph.moneyEdges.map((edge) =>
+        edge.id === "edge:lender-to-pool"
+          ? { ...edge, mechanism: "DIRECT_BANK_TRANSFER" as const }
+          : { ...edge, mechanism: "POOL_PASS_THROUGH" as const },
+      ),
+    };
+    expect(evaluateDL01(unrelatedPoolGraph)).toHaveLength(0);
   });
 
   it("baseline (ESCROW + DIRECT_BANK_TRANSFER): no violations", () => {
@@ -50,6 +64,26 @@ describe("DL-01 — BLOCK cases", () => {
   it("BLOCK graph (POOL_PASS_THROUGH edge): produces 1 violation", () => {
     const violations = evaluateDL01(blockGraph);
     expect(violations).toHaveLength(1);
+  });
+
+  it("creditor financing provider owning the source account triggers", () => {
+    expect(evaluateDL01(blockGraph)).toHaveLength(1);
+  });
+
+  it("creditor financing provider owning the destination account triggers", () => {
+    const destinationOwnedGraph: ActivityGraph = {
+      ...blockGraph,
+      moneyEdges: blockGraph.moneyEdges.map((edge) =>
+        edge.id === "edge:lender-to-pool"
+          ? {
+              ...edge,
+              sourceAccountId: "acc:treasury:pool",
+              destinationAccountId: "acc:partner_x:disbursement",
+            }
+          : edge,
+      ),
+    };
+    expect(evaluateDL01(destinationOwnedGraph)).toHaveLength(1);
   });
 
   it("violation has correct policyId", () => {
@@ -115,8 +149,8 @@ describe("DL-01 — mechanism variants", () => {
   });
 });
 
-describe("DL-01 — multiple violations", () => {
-  it("two POOL_PASS_THROUGH edges → two violations", () => {
+describe("DL-01 — provider association", () => {
+  it("flags only the pool edge involving the creditor provider", () => {
     const twoPoolEdges: ActivityGraph = {
       ...blockGraph,
       moneyEdges: [
@@ -126,11 +160,21 @@ describe("DL-01 — multiple violations", () => {
         })),
       ],
     };
-    // All edges are now POOL_PASS_THROUGH
     const violations = evaluateDL01(twoPoolEdges);
-    // blockGraph has 2 edges, both would be POOL_PASS_THROUGH now
-    expect(violations.length).toBeGreaterThanOrEqual(1);
+    expect(violations).toHaveLength(1);
+    expect(violations[0].graphObjects[0].id).toBe("edge:lender-to-pool");
     expect(violations.every((v) => v.policyId === "DL-01")).toBe(true);
     expect(violations.every((v) => v.severity === "BLOCK")).toBe(true);
+  });
+
+  it("keeps the TypeScript and Rego conditions structurally equivalent", () => {
+    const rego = readFileSync(resolve("src/policy/rego/dl-01.rego"), "utf8");
+    expect(rego).toContain('financing_provider.type == "FINANCING_PROVIDER"');
+    expect(rego).toContain("obligation.creditorActorId == financing_provider.id");
+    expect(rego).toContain('edge.mechanism == "POOL_PASS_THROUGH"');
+    expect(rego).toContain("account.id == edge.sourceAccountId");
+    expect(rego).toContain("account.id == edge.destinationAccountId");
+    expect(rego).toContain("account.ownerActorId == provider_id");
+    expect(rego).toContain("edge_involves_provider(edge, financing_provider.id)");
   });
 });

@@ -12,15 +12,15 @@
 # Effective: 2025-05-08
 #
 # What this rule detects:
-#   A MoneyEdge with mechanism = POOL_PASS_THROUGH in the proposed graph.
-#   This indicates funds are routed through a pool/treasury account before
-#   reaching the destination — the exact pattern this clause prohibits.
+#   A MoneyEdge with mechanism = POOL_PASS_THROUGH whose source or destination
+#   account is owned by the FINANCING_PROVIDER creditor of an Obligation. This is
+#   a topology the configured prototype policy flags under Paragraph 9 for
+#   compliance review.
 #
-# Scope: Loan disbursal and repayment flows only. A proposed graph must contain
-# an Obligation owed to a FINANCING_PROVIDER before a POOL_PASS_THROUGH edge is
-# evaluated by this rule. Regulatory exceptions (statutory
+# Scope: Loan disbursal and repayment flows directly involving a creditor
+# financing provider's account. Regulatory exceptions (statutory
 # mandate, co-lending between REs, specific end-use disbursal) are not encoded here
-# and would require manual review if applicable.
+# and would require manual review if applicable. Multi-hop association is not traced.
 
 package regulatory.dl01
 
@@ -28,7 +28,19 @@ import rego.v1
 
 default allow := true
 
-# Violation: any money edge using the POOL_PASS_THROUGH mechanism
+edge_involves_provider(edge, provider_id) if {
+    account := input.proposedGraph.accounts[_]
+    account.id == edge.sourceAccountId
+    account.ownerActorId == provider_id
+}
+
+edge_involves_provider(edge, provider_id) if {
+    account := input.proposedGraph.accounts[_]
+    account.id == edge.destinationAccountId
+    account.ownerActorId == provider_id
+}
+
+# Violation: a pool edge directly involving the creditor financing provider
 violations contains v if {
     financing_provider := input.proposedGraph.actors[_]
     financing_provider.type == "FINANCING_PROVIDER"
@@ -36,6 +48,7 @@ violations contains v if {
     obligation.creditorActorId == financing_provider.id
     edge := input.proposedGraph.moneyEdges[_]
     edge.mechanism == "POOL_PASS_THROUGH"
+    edge_involves_provider(edge, financing_provider.id)
     v := {
         "policyId": "DL-01",
         "severity": "BLOCK",

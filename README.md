@@ -34,6 +34,8 @@ npm run cli -- evaluate --baseline .regulatory/approved-baseline.json --source f
 
 Tests run offline and do not require an API key, OPA binary, network access, or a database. Gemini is only used by the live semantic fallback through `GEMINI_API_KEY`.
 
+The CLI, tests, and GitHub Action use the deterministic TypeScript policy evaluator. Rego mirrors the policy logic and provides an optional WASM execution path after compilation.
+
 ## Demo cases
 
 | Case | Scenario | Decision |
@@ -47,7 +49,7 @@ Tests run offline and do not require an API key, OPA binary, network access, or 
 
 | ID | Rule | Severity | Source |
 |----|------|----------|--------|
-| DL-01 | Pool/pass-through account in lending context (`POOL_PASS_THROUGH` plus an obligation to a financing provider) | **BLOCK** | RBI (Digital Lending) Directions, 2025, Paragraph 9 |
+| DL-01 | Pool/pass-through edge directly involving an account owned by the financing-provider creditor of a lending obligation | **BLOCK** | RBI (Digital Lending) Directions, 2025, Paragraph 9 |
 | PA-01 | Direct non-escrow-to-merchant topology heuristic | **REVIEW** | RBI (Regulation of Payment Aggregators) Directions, 2025, Chapter V, Paragraphs 16–18 |
 | DL-02 | `FINANCING_PROVIDER` actor not in approved-partners registry | **BLOCK** | Para 17–derived internal governance control *(not a direct CIMS-compliance test; see `policy-sources/dl-02.json`)* |
 | DL-03 | New `Obligation` appears in delta (new lending relationship) | **REVIEW** | Project-defined safety-net rule, not a specific RBI clause — see `policy-sources/dl-03.json` |
@@ -69,6 +71,7 @@ Policy metadata and primary RBI links are stored in `policy-sources/`. The proto
 - Candidate detection for the semantic fallback uses a limited financial vocabulary.
 - AI-classified calls can produce `REVIEW` when the financial activity cannot be resolved safely.
 - Graph extraction may omit context needed to assess regulatory exceptions or reach a legal conclusion.
+- DL-01 associates only edge endpoints with the creditor financing provider; it does not trace indirect multi-hop ownership paths.
 
 The offline candidate-triage evaluation set and its measured results are in [docs/evaluation.md](docs/evaluation.md).
 

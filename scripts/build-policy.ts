@@ -11,9 +11,8 @@
  * committed to src/policy/wasm/policy.wasm.
  *
  * WASM STALENESS WARNING: If any .rego file is edited without running this
- * script, the committed WASM artifact will be stale. The TypeScript evaluator
- * (src/policy/evaluator.ts) will still be used for `npm test`, but production
- * runtime via WASM will reflect outdated policy logic.
+ * script, a previously compiled optional WASM artifact will be stale. The CLI,
+ * tests, and GitHub Action continue to use the authoritative TypeScript evaluator.
  *
  * Stale WASM is a real failure mode. Always run `npm run build:policy` after
  * editing .rego files and commit the updated .wasm artifact.

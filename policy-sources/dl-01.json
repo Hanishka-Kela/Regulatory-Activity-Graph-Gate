@@ -10,10 +10,11 @@
   "section": "Paragraph 9 — Loan disbursal, servicing and repayment",
   "confidenceNote": "Primary RBI source confirmed. The implementation is a conservative topology policy and does not by itself establish a legal violation or determine whether an exception applies.",
   "clauseText": "Loan disbursal is normally made by the Regulated Entity into the borrower's bank account and must not be made to a third-party account, including an LSP account, except where Paragraph 9 permits it. Servicing and repayment occur directly between the borrower and the Regulated Entity without a third-party pass-through or pool account, and third parties must not control the fund flow.",
-  "observableGraphCondition": "A MoneyEdge with mechanism=POOL_PASS_THROUGH in a proposed graph that contains an Obligation owed to a FINANCING_PROVIDER.",
+  "observableGraphCondition": "A MoneyEdge with mechanism=POOL_PASS_THROUGH whose source or destination Account is owned by a FINANCING_PROVIDER that is also the creditorActorId of an Obligation in the proposed graph.",
   "implementationNotes": [
     "POOL_PASS_THROUGH mechanism value is set by the deterministic extractor only when evidence clearly indicates funds flowing through a third-party pool/treasury account before reaching the final destination.",
-    "The rule requires lending context: an Obligation owed to a FINANCING_PROVIDER. A POOL_PASS_THROUGH edge outside that context does not trigger DL-01.",
+    "The rule requires the POOL_PASS_THROUGH edge to directly involve an account owned by the same FINANCING_PROVIDER that is creditor of an Obligation. An unrelated pool edge does not trigger DL-01 merely because lending exists elsewhere in the graph.",
+    "This prototype does not perform unrestricted or multi-hop graph traversal, so indirect association beyond an edge endpoint remains a limitation.",
     "The regulatory exceptions listed in clauseText (statutory mandate, co-lending, specific end-use) are not handled by this rule and would require manual review if applicable — this rule is intentionally over-inclusive rather than attempting to encode the exceptions, per the project's principle that REVIEW/BLOCK on uncertainty is safer than a false PASS."
   ]
 }

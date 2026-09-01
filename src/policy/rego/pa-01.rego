@@ -18,10 +18,7 @@
 #   2. This does NOT check PA-CB or PA-P flows, which have separate requirements.
 #
 # What this rule detects:
-#   A MoneyEdge where:
-#     - sourceAccountId points to an RE or CUSTOMER custody account
-#     - destinationAccountId points to a MERCHANT custody account
-#     - There is NO intervening ESCROW_BANK account between customer and merchant
+#   A merchant-destined edge whose source is not an ESCROW_BANK account.
 #
 # Implementation note: The check looks for a MERCHANT-destined edge that does NOT
 # originate from an ESCROW_BANK account. This catches direct

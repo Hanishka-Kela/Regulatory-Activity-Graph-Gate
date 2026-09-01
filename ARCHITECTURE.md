@@ -26,7 +26,7 @@ Financial identity is hashed independently of labels, evidence IDs, derivation, 
 
 ## Policy runtime
 
-The TypeScript evaluator is authoritative in offline tests. Rego/WASM remains the intended production runtime when a compiled policy artifact is available. The approved baseline is a pinned `.regulatory/approved-baseline.json` artifact and is never reconstructed during evaluation.
+The deterministic TypeScript evaluator is the current authoritative runtime used by the CLI, tests, and GitHub Action. Rego policies mirror that logic, and the async evaluator exposes an optional Rego/WASM path after a policy artifact is compiled. If that optional path fails, it falls back to the authoritative TypeScript implementation. The demonstrated release CLI calls the synchronous TypeScript evaluator and does not invoke OPA/WASM. The approved baseline is a pinned `.regulatory/approved-baseline.json` artifact and is never reconstructed during evaluation.
 
 ## Known limitations
 
